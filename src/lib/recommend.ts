@@ -1,7 +1,7 @@
 import StudyGroup from "../models/StudyGroup";
 import Resource from "../models/Resource";
 import { IUser } from "../models/User";
-import { contentSimilarity } from "./similarity";
+import { cosineSimilarity } from "./similarity";
 
 /**
  * Recommend study groups based on user subjects and preferences.
@@ -13,7 +13,7 @@ export async function recommendStudyGroups(user: IUser, limit = 5) {
 
   const scored = allGroups.map((group) => {
     const groupVector = [group.subject, group.academicLevel || ""];
-    const score = contentSimilarity(userVector, groupVector);
+    const score = cosineSimilarity(userVector, groupVector);
     return { group, score };
   });
 
@@ -37,7 +37,7 @@ export async function recommendResources(user: IUser, limit = 5) {
 
   const scored = allResources.map((res) => {
     const resVector = [...res.subjectTags];
-    const score = contentSimilarity(userVector, resVector);
+    const score = cosineSimilarity(userVector, resVector);
     return { res, score };
   });
 
