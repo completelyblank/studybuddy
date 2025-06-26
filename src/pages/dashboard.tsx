@@ -9,35 +9,38 @@ export default function Dashboard() {
   const [joinedGroups, setJoinedGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      const fetchData = async () => {
-        try {
-          const [groupsRes, matchRes, joinedRes] = await Promise.all([
-            axios.post("/api/resources/recommendation", { userId: session.user.id }),
-            axios.post("/api/resources/matchmaking", { userId: session.user.id }),
-            axios.get("/api/groups/user", { params: { userId: session.user.id } }),
-          ]);
+  const userId = session?.user?.id;
 
-          setRecommendedGroups(Array.isArray(groupsRes.data) ? groupsRes.data : []);
-          setMatches(Array.isArray(matchRes.data) ? matchRes.data : []);
-          setJoinedGroups(Array.isArray(joinedRes.data) ? joinedRes.data : []);
-        } catch (err) {
-          console.error("Dashboard data fetch failed:", err);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchData();
-    }
-  }, [session?.user?.id]);
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchData = async () => {
+      try {
+        const [groupsRes, matchRes, joinedRes] = await Promise.all([
+          axios.post("/api/resources/recommendation", { userId }),
+          axios.post("/api/resources/matchmaking", { userId }),
+          axios.get("/api/groups/user", { params: { userId } }),
+        ]);
+
+        setRecommendedGroups(Array.isArray(groupsRes.data) ? groupsRes.data : []);
+        setMatches(Array.isArray(matchRes.data) ? matchRes.data : []);
+        setJoinedGroups(Array.isArray(joinedRes.data) ? joinedRes.data : []);
+      } catch (err) {
+        console.error("Dashboard data fetch failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [userId]);
 
   if (status === "loading" || loading) return <p className="text-white p-6">Loading dashboard...</p>;
-  if (!session) return <p>Please login to view dashboard.</p>;
+  if (!session || !userId) return <p>Please login to view dashboard.</p>;
 
   return (
     <div className="p-6 text-white bg-black min-h-screen space-y-6">
-      <h1 className="text-3xl font-bold mb-2">Welcome, {session.user?.name}</h1>
+      <h1 className="text-3xl font-bold mb-2">Welcome, {session.user.name}</h1>
 
       {/* 👤 Joined Groups */}
       <section>
@@ -72,7 +75,9 @@ export default function Dashboard() {
             {recommendedGroups.map((group) => (
               <li key={group._id} className="bg-gray-800 p-4 rounded">
                 <p className="font-bold">{group.title}</p>
-                <p className="text-sm text-gray-300">{group.subject} • {group.academicLevel}</p>
+                <p className="text-sm text-gray-300">
+                  {group.subject} • {group.academicLevel}
+                </p>
                 <button
                   className="mt-2 px-3 py-1 bg-teal-600 hover:bg-teal-700 rounded"
                   onClick={() => joinGroup(group._id)}
@@ -95,7 +100,9 @@ export default function Dashboard() {
             {matches.map((match) => (
               <li key={match.userId} className="bg-gray-800 p-4 rounded">
                 <p className="font-bold">{match.name}</p>
-                <p className="text-sm text-gray-300">Match score: {(match.score * 100).toFixed(0)}%</p>
+                <p className="text-sm text-gray-300">
+                  Match score: {(match.score * 100).toFixed(0)}%
+                </p>
               </li>
             ))}
           </ul>
@@ -110,13 +117,13 @@ export default function Dashboard() {
     </div>
   );
 
-  // Join group handler
+  // --- HANDLERS ---
+
   async function joinGroup(groupId: string) {
+    if (!userId) return;
+
     try {
-      await axios.post("/api/groups/join", {
-        groupId,
-        userId: session.user?.id,
-      });
+      await axios.post("/api/groups/join", { groupId, userId });
       alert("Joined group!");
       setRecommendedGroups((prev) => prev.filter((g) => g._id !== groupId));
       fetchJoinedGroups();
@@ -126,13 +133,11 @@ export default function Dashboard() {
     }
   }
 
-  // Leave group handler
   async function leaveGroup(groupId: string) {
+    if (!userId) return;
+
     try {
-      await axios.post("/api/groups/leave", {
-        groupId,
-        userId: session.user?.id,
-      });
+      await axios.post("/api/groups/leave", { groupId, userId });
       alert("Left group!");
       setJoinedGroups((prev) => prev.filter((g) => g._id !== groupId));
     } catch (err) {
@@ -142,9 +147,11 @@ export default function Dashboard() {
   }
 
   async function fetchJoinedGroups() {
+    if (!userId) return;
+
     try {
       const res = await axios.get("/api/groups/user", {
-        params: { userId: session.user?.id },
+        params: { userId },
       });
       setJoinedGroups(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
