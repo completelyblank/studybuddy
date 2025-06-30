@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "../../../lib/mongodb";
 import User from "../../../models/User";
-import StudyGroup from "../../../models/StudyGroup";
+import StudyGroup from "../../../models/StudyGroup"; // ✅ Make sure this import is hit
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
@@ -16,7 +16,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const user = await User.findById(userId).populate("joinedGroups");
+    // ✅ Ensure StudyGroup model is registered
+    const user = await User.findById(userId).populate({
+      path: "joinedGroups",
+      model: StudyGroup, // ✅ explicitly bind it here
+    });
+
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json(user.joinedGroups || []);

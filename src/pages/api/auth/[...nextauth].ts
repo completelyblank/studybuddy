@@ -1,14 +1,13 @@
-// src/pages/api/auth/[...nextauth].ts
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+// [...nextauth].ts
+import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import User from "../../../models/User";
 import { connectToDatabase } from "../../../lib/mongodb";
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
-   CredentialsProvider({
+    CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text" },
@@ -16,25 +15,46 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials) return null;
+
         await connectToDatabase();
-        const user = await User.findOne({ email: credentials.email });
+        const user = await User.findOne({ email: credentials.email }).select("+password");
+
         if (!user) throw new Error("No user found");
+        if (!user.password) throw new Error("User has no password set");
+
         const valid = await compare(credentials.password, user.password);
         if (!valid) throw new Error("Invalid password");
-        return { id: user._id.toString(), name: user.name, email: user.email };
+
+        return {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+        };
       },
     }),
   ],
+
   callbacks: {
-    async session({ session, token }) {
-      if (token.sub) session.user.id = token.sub;
-      return session;
-    },
     async jwt({ token, user }) {
-      if (user) token.id = user.id;
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+      }
       return token;
     },
+
+    async session({ session, token }) {
+      session.user = {
+        id: token.id as string,
+        name: token.name || null,
+        email: token.email || null,
+        image: token.picture || null,
+      };
+      return session;
+    },
   },
+
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/auth/signin",
@@ -42,7 +62,7 @@ const handler = NextAuth({
   session: {
     strategy: "jwt",
   },
-});
+};
 
-// ✅ This is the correct export
-export default handler;
+// 👇 Default export for API route
+export default NextAuth(authOptions);

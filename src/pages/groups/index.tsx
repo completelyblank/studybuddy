@@ -41,16 +41,13 @@ export default function GroupSelectionPage() {
     setGroups(data);
   };
 
-  const fetchMatches = async () => {
-    const res = await fetch("/api/resources/matchmaking", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: session?.user?.id })
-    });
-    const data = await res.json();
-    setMatches(data);
-    setLoading(false);
-  };
+ const fetchMatches = async () => {
+  const res = await fetch(`/api/resources/matchmaking?userId=${session?.user?.id}`);
+  const data = await res.json();
+  setMatches(data);
+  setLoading(false);
+};
+
 
   const joinGroup = async (groupId: string) => {
     await fetch("/api/groups/join", {

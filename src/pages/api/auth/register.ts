@@ -2,6 +2,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "../../../lib/mongodb";
 import User from "../../../models/User";
+console.log("✅ Model loaded is:", User.modelName);
+
 import bcrypt from "bcryptjs";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
