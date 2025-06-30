@@ -47,21 +47,21 @@ const userSchema = new Schema<IUser>(
     studyGoals: String,
     preferredStudyTimes: [String],
     learningStyle: String,
-    joinedGroups: [{ type: Schema.Types.ObjectId, ref: 'StudyGroup' }],
+    joinedGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StudyGroup' }],
     interactionHistory: [{
-      resource: { type: Schema.Types.ObjectId, ref: 'Resource' },
+      resource: { type: mongoose.Schema.Types.ObjectId, ref: 'Resource' },
       rating: Number,
       comments: String,
       viewedAt: Date
     }],
     groupInteractionHistory: [
     {
-      group: { type: Schema.Types.ObjectId, ref: "StudyGroup" },
+      group: { type: mongoose.Schema.Types.ObjectId, ref: "StudyGroup" },
       rating: Number,
       comments: String,
       viewedAt: Date,
     }],
-    matches: [{ type: Schema.Types.ObjectId, ref: 'MatchHistory' }],
+    matches: [{ type:mongoose.Schema.Types.ObjectId, ref: 'MatchHistory' }],
     completedQuizzes: [
       {
         quizId: String,

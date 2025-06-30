@@ -1,41 +1,36 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "../../../lib/mongodb";
-import StudyGroup from "../../../models/StudyGroup";
+import dbConnect from "../../../utils/dbConnect";
 import User from "../../../models/User";
-import mongoose from "mongoose";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await connectToDatabase();
+  await dbConnect();
 
   if (req.method !== "POST") {
-    res.setHeader("Allow", ["POST"]);
-    return res.status(405).end(`Method ${req.method} Not Allowed`);
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
+
+  const { userId, groupId } = req.body;
+
+  console.log("LEAVE GROUP BODY:", req.body);
+
+  if (!userId || !groupId) {
+    return res.status(400).json({ message: "Missing userId or groupId" });
   }
 
   try {
-    const { groupId, userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!groupId || !userId) {
-      return res.status(400).json({ message: "Missing groupId or userId" });
-    }
-
-    const group = await StudyGroup.findById(groupId);
-    if (!group) return res.status(404).json({ message: "Group not found" });
-
-    // Filter out user from group's members
-    group.members = group.members.filter(
-      (id: mongoose.Types.ObjectId) => id.toString() !== userId
+    // Filter out the groupId
+    user.joinedGroups = user.joinedGroups.filter(
+      (id: any) => id.toString() !== groupId.toString()
     );
-    await group.save();
 
-    // Remove group from user's joinedGroups
-    await User.findByIdAndUpdate(userId, {
-      $pull: { joinedGroups: group._id },
-    });
+    await user.save();
 
-    return res.status(200).json({ message: "Left group successfully" });
-  } catch (error) {
-    console.error("Error leaving group:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(200).json({ message: "Left group" });
+  } catch (err) {
+    console.error("Leave group error:", err);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }

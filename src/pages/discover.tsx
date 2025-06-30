@@ -3,6 +3,7 @@ import axios from "axios";
 import ResourceCard from "../components/ResourceCard";
 import GroupCard from "../components/GroupCard";
 import type { Resource } from "../types/resource_type";
+import { getSession, useSession } from "next-auth/react";
 
 type GroupFeedback = {
   user: string;
@@ -30,6 +31,7 @@ type Filters = {
 export default function DiscoverPage() {
   const [resources, setResources] = useState<Resource[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
+  const { data: session } = useSession();
   const [filters, setFilters] = useState<Filters>({
     subject: "",
     academicLevel: "",
@@ -45,10 +47,10 @@ export default function DiscoverPage() {
   useEffect(() => {
     const fetchJoinedGroups = async () => {
       try {
-       const res = await axios.get("/api/users/me", {
-  withCredentials: true, // 🔑 CRUCIAL for NextAuth JWT or session
-});
-        setJoinedGroupIds(res.data.joinedGroups || []);
+        const res = await fetch("/api/groups/list");
+        const data = await res.json();
+        setGroups(data);
+        setJoinedGroupIds(data.joinedGroups || []);
       } catch (err) {
         console.error("Error fetching joined groups", err);
       }
@@ -59,7 +61,7 @@ export default function DiscoverPage() {
   const fetchData = async () => {
     try {
       const [groupRes, resourceRes] = await Promise.all([
-        axios.get<Group[]>("/api/discover/groups", { params: filters }),
+        axios.get<Group[]>("/api/groups/list"),
         axios.get<Resource[]>("/api/discover/resources", { params: filters }),
       ]);
       setGroups(groupRes.data || []);
@@ -69,9 +71,14 @@ export default function DiscoverPage() {
     }
   };
 
+
   const handleJoin = async (groupId: string) => {
     try {
-      await axios.post("/api/groups/join", { groupId });
+      await axios.post("/api/groups/join", {
+  groupId,
+  userId: session?.user?.id, 
+});
+
       setJoinedGroupIds((prev) => [...prev, groupId]);
     } catch (err) {
       console.error("Join group error:", err);
@@ -80,7 +87,12 @@ export default function DiscoverPage() {
 
   const handleLeave = async (groupId: string) => {
     try {
-      await axios.post("/api/groups/leave", { groupId });
+      await axios.post("/api/groups/leave", {
+  groupId,
+  userId: session?.user?.id, 
+});
+
+
       setJoinedGroupIds((prev) => prev.filter((id) => id !== groupId));
     } catch (err) {
       console.error("Leave group error:", err);

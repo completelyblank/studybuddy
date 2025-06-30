@@ -3,27 +3,27 @@ import { GroupFeedbackForm } from "./GroupFeedbackForm";
 import { useSession } from "next-auth/react";
 
 interface GroupFeedback {
-    user: string;
-    rating: number;
-    comments?: string;
-    ratedAt: string;
+  user: string;
+  rating: number;
+  comments?: string;
+  ratedAt: string;
 }
 
 interface GroupProps {
-    group: {
-        _id: string;
-        title: string;
-        description?: string;
-        subject?: string;
-        academicLevel?: string;
-        averageRating?: number;
-        feedbackComments?: GroupFeedback[];
-    };
-    onJoin?: (id: string) => void;
-    onLeave?: (id: string) => void;
-    isJoined?: boolean;
-}
-
+  group: {
+    _id: string;
+    title: string;
+    description?: string;
+    subject?: string;
+    academicLevel?: string;
+    averageRating?: number | null;
+    feedbackComments?: GroupFeedback[];
+  };
+  onJoin?: (id: string) => void;
+  onLeave?: (id: string) => void;
+  isJoined?: boolean;
+};
+   
 
 const GroupCard: React.FC<GroupProps> = ({ group, onJoin, onLeave, isJoined = false }) => {
     const { data: session } = useSession();

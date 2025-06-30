@@ -1,36 +1,32 @@
-// src/pages/api/groups/join.ts
 import { NextApiRequest, NextApiResponse } from "next";
-import { connectToDatabase } from "../../../lib/mongodb";
-import StudyGroup from "../../../models/StudyGroup";
+import dbConnect from "../../../utils/dbConnect";
 import User from "../../../models/User";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await connectToDatabase();
-   console.log("Request method:", req.method); 
-    console.log("BODY:", req.body);
-  if (req.method === "POST") {
-    try {
-      const { groupId, userId } = req.body;
+  await dbConnect();
 
-      const group = await StudyGroup.findById(groupId);
-      if (!group) return res.status(404).json({ message: "Group not found" });
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
 
-      if (group.members.includes(userId)) {
-        return res.status(400).json({ message: "User already in group" });
-      }
+  const { userId, groupId } = req.body;
 
-      group.members.push(userId);
-      await group.save();
+  if (!userId || !groupId) {
+    return res.status(400).json({ message: "Missing userId or groupId" });
+  }
 
-      await User.findByIdAndUpdate(userId, { $addToSet: { joinedGroups: groupId } });
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-      res.status(200).json({ message: "Joined group successfully" });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: "Failed to join group" });
+    if (!user.joinedGroups.includes(groupId)) {
+      user.joinedGroups.push(groupId);
+      await user.save();
     }
-  } else {
-    res.setHeader("Allow", ["POST"]);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    return res.status(200).json({ message: "Joined group" });
+  } catch (err) {
+    console.error("Join group error", err);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }
