@@ -8,10 +8,9 @@ type ChatMessage = {
   sender: string;
 };
 
-export default function ChatRoom() {
+export default function GroupChat() {
   const router = useRouter();
-  const { groupId } = router.query;
-
+  const { id } = router.query; // Changed from groupId to id
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [currentUser, setCurrentUser] = useState<string>("");
@@ -29,15 +28,15 @@ export default function ChatRoom() {
 
   // Socket connection logic
   useEffect(() => {
-    if (!groupId) return;
+    if (!id) return;
 
     const socket = io("http://localhost:3000", {
-      path: "/socket.io",
+      path: "/api/socket", // Updated to match your Socket.IO path
       transports: ["websocket", "polling"],
     });
 
     socketRef.current = socket;
-    socket.emit("joinRoom", groupId);
+    socket.emit("joinRoom", id); // Use id instead of groupId
 
     socket.on("chatMessage", (msg: ChatMessage) => {
       setMessages((prev) => [...prev, msg]);
@@ -46,12 +45,12 @@ export default function ChatRoom() {
     return () => {
       socket.disconnect();
     };
-  }, [groupId]);
+  }, [id]);
 
   const sendMessage = () => {
     if (input.trim() && socketRef.current) {
       socketRef.current.emit("chatMessage", {
-        roomId: groupId,
+        roomId: id, // Use id instead of groupId
         message: input,
         sender: currentUser,
       });
@@ -61,7 +60,7 @@ export default function ChatRoom() {
 
   return (
     <div className="p-6 text-white bg-black min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Group Chat: {groupId}</h1>
+      <h1 className="text-2xl font-bold mb-4">Group Chat: {id}</h1>
       <div className="space-y-2 mb-4 max-h-[60vh] overflow-y-auto">
         {messages.map((msg, idx) => (
           <div key={idx} className="bg-gray-700 p-2 rounded">
