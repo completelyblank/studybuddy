@@ -3,7 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { Server as HTTPServer } from "http";
 import dbConnect from "../../utils/dbConnect";
 import Chat from "../../models/Chat";
-import User from "../../models/User"; // Import User model
+import User from "../../models/User";
 import GroupChat from "@/src/models/GroupChat";
 
 type NextApiResponseServerIO = NextApiResponse & {
@@ -15,16 +15,17 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponseServerIO) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
     if (!res.socket.server.io) {
       console.log("✅ Socket.IO server initializing...");
       const io = new Server(res.socket.server, {
         path: "/api/socket",
         addTrailingSlash: false,
+        cors: {
+          origin: "http://localhost:3000", // Ensure client origin is allowed
+          methods: ["GET", "POST"],
+          credentials: true,
+        },
       });
       res.socket.server.io = io;
 
@@ -43,13 +44,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
             const chat = await Chat.findById(chatId);
             if (!chat) {
               console.error(`Chat not found: ${chatId}`);
+              socket.emit("error", { message: `Chat not found: ${chatId}` });
               return;
             }
 
-            // Fetch user to get their name
             const user = await User.findById(userId).select("name");
             if (!user) {
               console.error(`User not found: ${userId}`);
+              socket.emit("error", { message: `User not found: ${userId}` });
               return;
             }
 
@@ -64,10 +66,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
             io.to(chatId).emit("message", message);
           } catch (err) {
             console.error("Error saving message:", err);
+            socket.emit("error", { message: "Failed to save message" });
           }
         });
 
-        // Group chat events (unchanged)
         socket.on("joinRoom", (groupId: string) => {
           console.log(`User joined group chat: ${groupId}`);
           socket.join(`group-${groupId}`);
@@ -88,6 +90,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
             io.to(`group-${roomId}`).emit("chatMessage", newMessage);
           } catch (err) {
             console.error("Error saving group message:", err);
+            socket.emit("error", { message: "Failed to save group message" });
           }
         });
 
@@ -95,6 +98,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
           console.log("🔴 Client disconnected:", socket.id);
         });
       });
+
+      console.log("Socket.IO server initialized successfully");
     } else {
       console.log("ℹ️ Socket.IO server already initialized");
     }
