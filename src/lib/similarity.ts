@@ -6,7 +6,9 @@ import { IUser } from "../models/User";
 export function userToVector(user: IUser): string[] {
   return [
     ...(user.subjects || []),
-    ...(user.preferredStudyTimes || []),
+    ...(user.preferredStudyTimes || []).map(
+      (time) => `${time.day}:${time.startTime}-${time.endTime}`
+    ),
     ...(user.academicLevel ? [user.academicLevel] : []),
     ...(user.learningStyle ? [user.learningStyle] : []),
   ];

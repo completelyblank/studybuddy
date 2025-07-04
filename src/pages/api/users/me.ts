@@ -29,11 +29,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     return res.status(200).json({
-      id: user._id,
+      id: user._id.toString(),
       name: user.name,
       email: user.email,
-      joinedGroups: user.joinedGroups || [],
+      joinedGroups: (user.joinedGroups || []).map((group: any) => {
+        if (typeof group === "object" && group._id) {
+          return {
+            _id: group._id.toString(),
+            title: group.title ?? "",
+            description: group.description ?? "",
+          };
+        }
+        return { _id: group.toString(), title: "", description: "" }; // fallback
+      }),
     });
+
   } catch (err) {
     console.error("❌ Error in /api/users/me:", err);
     return res.status(500).json({ message: "Internal Server Error" });

@@ -110,7 +110,6 @@ export default function DiscoverPage() {
         {[
           { label: "Subject", key: "subject" },
           { label: "Academic Level", key: "academicLevel" },
-          { label: "Preferred Study Time", key: "time" },
         ].map(({ label, key }) => (
           <div key={key}>
             <label className="block text-sm mb-1">{label}</label>
@@ -137,26 +136,6 @@ export default function DiscoverPage() {
             <option value={4}>4+ stars</option>
           </select>
         </div>
-      </section>
-
-      {/* 🧠 Groups */}
-      <section>
-        <h2 className="text-2xl font-semibold mb-2">Study Groups</h2>
-        {groups.length === 0 ? (
-          <p>No matching groups found.</p>
-        ) : (
-          <ul className="space-y-3">
-            {groups.map((g) => (
-              <GroupCard
-                key={g._id}
-                group={g}
-                isJoined={joinedGroupIds.includes(g._id)}
-                onJoin={handleJoin}
-                onLeave={handleLeave}
-              />
-            ))}
-          </ul>
-        )}
       </section>
 
       {/* 📚 Resources */}

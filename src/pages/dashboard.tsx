@@ -1,7 +1,13 @@
+"use client";
+
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
+import io, { Socket } from "socket.io-client";
+import { DefaultEventsMap } from "@socket.io/component-emitter";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import GroupAvailability from "../components/GroupAvailability";
 import Navbar from "../components/Navbar";
 
@@ -30,6 +36,17 @@ interface PendingRequest {
   status: string;
 }
 
+interface EditProfileState {
+  academicLevel: string;
+  subjects: string;
+  preferredStudyTimes: string;
+  learningStyle: string;
+  studyGoals: string;
+}
+
+
+let socket: Socket<DefaultEventsMap, DefaultEventsMap>;
+
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -40,7 +57,7 @@ export default function Dashboard() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
-  const [editProfile, setEditProfile] = useState({
+  const [editProfile, setEditProfile] = useState<EditProfileState>({
     academicLevel: "",
     subjects: "",
     preferredStudyTimes: "",
@@ -50,6 +67,55 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!userId) return;
+
+    // Initialize Socket.IO
+    socket = io("http://localhost:3000", {
+      path: "/api/socket",
+      addTrailingSlash: false,
+    });
+
+    socket.on("connect", () => {
+      console.log("Connected to Socket.IO for dashboard");
+      socket.emit("joinUserRoom", userId);
+    });
+
+    socket.on("matchFound", ({ matchId }) => {
+      toast.success(`Match found! ID: ${matchId}`, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    });
+
+    socket.on("newMessage", ({ chatId, content, sender }) => {
+      toast.info(`New message in chat ${chatId} from ${sender}: ${content}`, {
+        position: "top-right",
+        autoClose: 5000,
+        onClick: () => router.push(`/chat/${chatId}`),
+      });
+    });
+
+    socket.on("sessionReminder", ({ sessionId, time }) => {
+      toast.warning(`Session ${sessionId} starts at ${time}`, {
+        position: "top-right",
+        autoClose: 10000,
+        onClick: () => router.push(`/session/${sessionId}`),
+      });
+    });
+
+    socket.on("error", ({ message }) => {
+      toast.error(message, {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    });
+
+    socket.on("connect_error", (err) => {
+      console.error("Connection error:", err.message);
+      toast.error("Failed to connect to notification server", {
+        position: "top-right",
+        autoClose: 5000,
+      });
+    });
 
     const fetchData = async () => {
       try {
@@ -74,66 +140,122 @@ export default function Dashboard() {
           learningStyle: userRes.data.learningStyle || "",
           studyGoals: userRes.data.studyGoals || "",
         });
+
+        // Trigger matchFound for new matches
+        matchRes.data.forEach((match: Match) => {
+          socket.emit("findMatch", userId);
+        });
       } catch (err) {
         console.error("Dashboard fetch error:", err);
-        alert("Failed to load dashboard data");
+        toast.error("Failed to load dashboard data", {
+          position: "top-right",
+          autoClose: 5000,
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [userId]);
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
+  }, [userId, router]);
 
   async function updateAvatar() {
     if (!userId || !avatarUrl.trim()) {
-      alert("Please provide a valid avatar URL");
+      toast.error("Please provide a valid avatar URL", {
+        position: "top-right",
+        autoClose: 5000,
+      });
       return;
     }
 
     try {
       await axios.put("/api/users/avatar", { userId, avatar: avatarUrl }, { withCredentials: true });
-      alert("Avatar updated successfully");
+      toast.success("Avatar updated successfully", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error("Avatar update error:", err);
-      alert("Failed to update avatar");
+      toast.error("Failed to update avatar", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
 
   async function updateProfile() {
     try {
+      const preferredStudyTimesArray = editProfile.preferredStudyTimes
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => {
+          const [day, timeRange] = t.split(" ");
+          const [startTime, endTime] = timeRange?.split("-") || [];
+          return {
+            day: day || "",
+            startTime: startTime || "",
+            endTime: endTime || "",
+          };
+        })
+        .filter((obj) => obj.day && obj.startTime && obj.endTime); // Ensure validity
+
       await axios.put(
         "/api/users/update",
         {
           userId,
           ...editProfile,
-          subjects: editProfile.subjects.split(",").map((s) => s.trim()).filter((s) => s),
-          preferredStudyTimes: editProfile.preferredStudyTimes.split(",").map((t) => t.trim()).filter((t) => t),
+          subjects: editProfile.subjects
+            .split(",")
+            .map((s) => s.trim())
+            .filter((s) => s),
+          preferredStudyTimes: preferredStudyTimesArray,
         },
         { withCredentials: true }
       );
-      alert("Profile updated successfully");
+
+      toast.success("Profile updated successfully", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error("Profile update error:", err);
-      alert("Failed to update profile");
+      toast.error("Failed to update profile", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
+
 
   async function leaveGroup(groupId: string) {
     try {
       await axios.post("/api/groups/leave", { groupId, userId }, { withCredentials: true });
       setJoinedGroups((prev) => prev.filter((g) => g._id !== groupId));
-      alert("Left group successfully");
+      toast.success("Left group successfully", {
+        position: "top-right",
+        autoClose: 3000,
+      });
     } catch (err) {
       console.error("Error leaving group:", err);
-      alert("Failed to leave group");
+      toast.error("Failed to leave group", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
 
   async function sendStudyPartnerRequest(receiverId: string) {
     try {
       await axios.post("/api/requests/send", { senderId: userId, receiverId }, { withCredentials: true });
-      alert("Study partner request sent!");
+      toast.success("Study partner request sent!", {
+        position: "top-right",
+        autoClose: 3000,
+      });
       const requestsRes = await axios.get("/api/requests/pending", {
         params: { userId },
         withCredentials: true,
@@ -141,7 +263,10 @@ export default function Dashboard() {
       setPendingRequests(requestsRes.data || []);
     } catch (err) {
       console.error("Error sending request:", err);
-      alert("Failed to send request");
+      toast.error("Failed to send request", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
 
@@ -152,7 +277,11 @@ export default function Dashboard() {
         { requestId, status, userId },
         { withCredentials: true }
       );
-      alert(`Request ${status}`);
+      toast.success(`Request ${status}`, {
+        position: "top-right",
+        autoClose: 3000,
+        onClick: status === "approved" && res.data.chatId ? () => router.push(`/chat/${res.data.chatId}`) : undefined,
+      });
       // Fetch updated requests and chats
       const [requestsRes, chatsRes] = await Promise.all([
         axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
@@ -168,7 +297,10 @@ export default function Dashboard() {
       }
     } catch (err) {
       console.error("Error responding to request:", err);
-      alert("Failed to respond to request");
+      toast.error("Failed to respond to request", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
 
@@ -176,15 +308,38 @@ export default function Dashboard() {
     try {
       const res = await axios.post("/api/chats/initiate", { userId1: userId, userId2 }, { withCredentials: true });
       const chatId = res.data.chatId;
+      toast.success("Chat initiated successfully", {
+        position: "top-right",
+        autoClose: 3000,
+        onClick: () => router.push(`/chat/${chatId}`),
+      });
       router.push(`/chat/${chatId}`);
     } catch (err) {
       console.error("Error initiating chat:", err);
-      alert("Failed to initiate chat");
+      toast.error("Failed to initiate chat", {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
   }
 
-  if (status === "loading" || loading) return <p className="text-white p-6">Loading...</p>;
-  if (!session || !userId) return <p className="text-white p-6">Please login to view dashboard.</p>;
+  if (status === "loading" || loading) {
+    return (
+      <div className="p-6 text-white bg-black min-h-screen">
+        <Navbar />
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (!session || !userId) {
+    return (
+      <div className="p-6 text-white bg-black min-h-screen">
+        <Navbar />
+        <p>Please login to view dashboard.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 text-white bg-black min-h-screen space-y-8">
@@ -230,6 +385,7 @@ export default function Dashboard() {
               value={editProfile[name as keyof typeof editProfile]}
               onChange={(e) => setEditProfile({ ...editProfile, [name]: e.target.value })}
             />
+
           </div>
         ))}
         <button
@@ -279,7 +435,7 @@ export default function Dashboard() {
           <p>You haven’t joined any groups yet.</p>
         )}
       </section>
-      
+
       {/* 📬 Pending Study Partner Requests */}
       <section>
         <h2 className="text-xl font-semibold mb-2">Study Partner Requests</h2>
@@ -374,6 +530,19 @@ export default function Dashboard() {
           <p>No compatible matches yet.</p>
         )}
       </section>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
     </div>
   );
 }
