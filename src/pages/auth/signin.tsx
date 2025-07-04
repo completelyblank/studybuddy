@@ -12,42 +12,49 @@ export default function SignIn({ providers }: { providers: any }) {
     await signIn("credentials", {
       email,
       password,
-      callbackUrl: "/dashboard", // Redirect after login
+      callbackUrl: "/dashboard",
     });
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold mb-6 text-center">Sign In to StudyBuddy</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white">
+      <div className="bg-white/10 backdrop-blur-md border border-teal-400/40 p-8 rounded-xl shadow-xl w-full max-w-md">
+        <h1 className="text-3xl font-bold mb-6 text-center text-teal-300 drop-shadow-lg">
+          Sign In
+        </h1>
 
-        {/* Credentials Form */}
-        <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+        <form onSubmit={handleCredentialsSignIn} className="space-y-5">
           <div>
-            <label htmlFor="email" className="block text-sm">Email</label>
+            <label htmlFor="email" className="block text-sm text-blue-200 mb-1">
+              Email
+            </label>
             <input
               id="email"
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full mt-1 px-3 py-2 bg-gray-700 rounded border border-gray-600 text-white"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
             />
           </div>
+
           <div>
-            <label htmlFor="password" className="block text-sm">Password</label>
+            <label htmlFor="password" className="block text-sm text-blue-200 mb-1">
+              Password
+            </label>
             <input
               id="password"
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full mt-1 px-3 py-2 bg-gray-700 rounded border border-gray-600 text-white"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
             />
           </div>
+
           <button
             type="submit"
-            className="w-full bg-teal-600 hover:bg-teal-700 py-2 px-4 rounded text-white font-semibold"
+            className="w-full bg-teal-600 hover:bg-teal-700 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition"
           >
             Sign in with Email
           </button>

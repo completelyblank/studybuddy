@@ -2,6 +2,7 @@ import mongoose, { Schema } from "mongoose";
 
 // Export the IUser interface
 export interface IUser {
+  [x: string]: any;
   name: string;
   email: string;
   password: string;
