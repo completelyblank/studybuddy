@@ -342,12 +342,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 text-white bg-black min-h-screen space-y-8">
+  <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-8">
       <Navbar />
       <h1 className="text-3xl font-bold">Welcome, {session.user.name}</h1>
 
       {/* 👤 Avatar */}
-      <section className="bg-gray-800 p-4 rounded space-y-3">
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold">Profile Avatar</h2>
         <img
           src={avatarUrl || "/default.jpeg"}
@@ -358,10 +358,10 @@ export default function Dashboard() {
           value={avatarUrl}
           onChange={(e) => setAvatarUrl(e.target.value)}
           placeholder="Enter Avatar URL"
-          className="w-full bg-gray-900 p-2 rounded text-white"
+          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
         />
         <button
-          className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
           onClick={updateAvatar}
         >
           Update Avatar
@@ -369,7 +369,7 @@ export default function Dashboard() {
       </section>
 
       {/* ✏️ Profile Preferences */}
-      <section className="bg-gray-800 p-4 rounded space-y-2">
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold">Edit Preferences</h2>
         {[
           { label: "Academic Level", name: "academicLevel" },
@@ -381,7 +381,7 @@ export default function Dashboard() {
           <div key={name}>
             <label className="block text-sm mb-1">{label}</label>
             <input
-              className="w-full bg-gray-900 p-2 rounded text-white"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
               value={editProfile[name as keyof typeof editProfile]}
               onChange={(e) => setEditProfile({ ...editProfile, [name]: e.target.value })}
             />
@@ -389,7 +389,7 @@ export default function Dashboard() {
           </div>
         ))}
         <button
-          className="bg-teal-600 hover:bg-teal-700 px-3 py-1 rounded mt-2"
+          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
           onClick={updateProfile}
         >
           Save Profile
@@ -397,7 +397,7 @@ export default function Dashboard() {
       </section>
 
       {/* 🧠 Joined Study Groups */}
-      <section>
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold mb-2">Your Study Groups</h2>
         {joinedGroups.length ? (
           <ul className="space-y-4">
@@ -407,19 +407,19 @@ export default function Dashboard() {
                 <p className="text-sm">{group.description}</p>
                 <div className="mt-2 space-x-2">
                   <button
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                     onClick={() => router.push(`/chat/group/${group._id}`)}
                   >
                     Open Group Chat
                   </button>
                   <button
-                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                     onClick={() => router.push(`/whiteboard/${group._id}`)}
                   >
                     Open Whiteboard
                   </button>
                   <button
-                    className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
                     onClick={() => leaveGroup(group._id)}
                   >
                     Leave Group
@@ -437,7 +437,7 @@ export default function Dashboard() {
       </section>
 
       {/* 📬 Pending Study Partner Requests */}
-      <section>
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold mb-2">Study Partner Requests</h2>
         {pendingRequests.length ? (
           <ul className="space-y-2">
@@ -451,13 +451,13 @@ export default function Dashboard() {
                 {request.status === "pending" && request.receiverId._id === userId && (
                   <div className="mt-2 space-x-2">
                     <button
-                      className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded"
+                     className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
                       onClick={() => respondToRequest(request._id, "approved")}
                     >
                       Approve
                     </button>
                     <button
-                      className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded"
+                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
                       onClick={() => respondToRequest(request._id, "rejected")}
                     >
                       Reject
@@ -466,7 +466,7 @@ export default function Dashboard() {
                 )}
                 {request.status === "approved" && (
                   <button
-                    className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                     onClick={() => initiateChat(request.senderId._id === userId ? request.receiverId._id : request.senderId._id)}
                   >
                     Start Chat
@@ -481,7 +481,7 @@ export default function Dashboard() {
       </section>
 
       {/* 💬 Active Chats */}
-      <section>
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold mb-2">Your Private Chats</h2>
         {chats.length ? (
           <ul className="space-y-2">
@@ -494,7 +494,7 @@ export default function Dashboard() {
                     Last message: {chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].content : "No messages yet"}
                   </p>
                   <button
-                    className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                     onClick={() => router.push(`/chat/${chat._id}`)}
                   >
                     Open Chat
@@ -509,7 +509,7 @@ export default function Dashboard() {
       </section>
 
       {/* 🤝 Suggested Study Partners */}
-      <section>
+      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
         <h2 className="text-xl font-semibold mb-2">Suggested Study Partners</h2>
         {matches.length ? (
           <ul className="space-y-2">
@@ -518,7 +518,7 @@ export default function Dashboard() {
                 <p className="font-bold">{match.name}</p>
                 <p className="text-sm">Match score: {(match.score * 100).toFixed(0)}%</p>
                 <button
-                  className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                   onClick={() => sendStudyPartnerRequest(match.userId)}
                 >
                   Request Study Partner
