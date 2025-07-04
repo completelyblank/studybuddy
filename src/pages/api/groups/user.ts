@@ -1,14 +1,40 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { connectToDatabase } from "../../../lib/mongodb";
 import User from "../../../models/User";
-import StudyGroup from "../../../models/StudyGroup"; // ✅ Make sure this import is hit
+import StudyGroup from "../../../models/StudyGroup";
+import { getToken } from "next-auth/jwt";
+import { Types } from "mongoose";
+
+// Define interfaces within the file
+interface IStudyGroup {
+  _id: Types.ObjectId | string;
+  title: string;
+  description?: string;
+  members: Types.ObjectId[] | string[];
+}
+
+interface IUser {
+  _id: Types.ObjectId | string;
+  name: string;
+  email: string;
+  avatar?: string;
+  academicLevel?: string;
+  subjects?: string[];
+  preferredStudyTimes?: { day: string; startTime: string; endTime: string }[];
+  learningStyle?: string;
+  studyGoals?: string;
+  joinedGroups?: IStudyGroup[];
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET") {
     return res.status(405).json({ message: "Method Not Allowed" });
   }
 
-  await connectToDatabase();
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  if (!token?.id) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   const { userId } = req.query;
   if (!userId || typeof userId !== "string") {
@@ -16,15 +42,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // ✅ Ensure StudyGroup model is registered
-    const user = await User.findById(userId).populate({
-      path: "joinedGroups",
-      model: StudyGroup, // ✅ explicitly bind it here
-    });
+    await connectToDatabase();
+    const user = await User.findById(userId)
+      .populate<{
+        joinedGroups: IStudyGroup[];
+      }>({
+        path: "joinedGroups",
+        model: StudyGroup,
+        select: "title description members",
+      })
+      .lean<IUser>();
 
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.status(200).json(user.joinedGroups || []);
+    const transformedGroups = (user.joinedGroups || []).map((group) => ({
+      _id: group._id.toString(),
+      title: group.title || "",
+      description: group.description || "",
+      members: (group.members || []).map((member) => member.toString()),
+    }));
+
+    res.status(200).json(transformedGroups);
   } catch (err) {
     console.error("Failed to fetch user's groups:", err);
     res.status(500).json({ message: "Server error" });

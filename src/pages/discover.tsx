@@ -38,26 +38,13 @@ export default function DiscoverPage() {
     time: "",
   });
   const [minRating, setMinRating] = useState<number>(0);
-  const [joinedGroupIds, setJoinedGroupIds] = useState<string[]>([]);
+
 
   useEffect(() => {
     fetchData();
   }, [filters]);
 
-  useEffect(() => {
-    const fetchJoinedGroups = async () => {
-      try {
-        const res = await fetch("/api/groups/list");
-        const data = await res.json();
-        setGroups(data);
-        setJoinedGroupIds(data.joinedGroups || []);
-      } catch (err) {
-        console.error("Error fetching joined groups", err);
-      }
-    };
-    fetchJoinedGroups();
-  }, []);
-
+  
   const fetchData = async () => {
     try {
       const [groupRes, resourceRes] = await Promise.all([
@@ -68,34 +55,6 @@ export default function DiscoverPage() {
       setResources(resourceRes.data || []);
     } catch (err) {
       console.error("Fetch error", err);
-    }
-  };
-
-
-  const handleJoin = async (groupId: string) => {
-    try {
-      await axios.post("/api/groups/join", {
-  groupId,
-  userId: session?.user?.id, 
-});
-
-      setJoinedGroupIds((prev) => [...prev, groupId]);
-    } catch (err) {
-      console.error("Join group error:", err);
-    }
-  };
-
-  const handleLeave = async (groupId: string) => {
-    try {
-      await axios.post("/api/groups/leave", {
-  groupId,
-  userId: session?.user?.id, 
-});
-
-
-      setJoinedGroupIds((prev) => prev.filter((id) => id !== groupId));
-    } catch (err) {
-      console.error("Leave group error:", err);
     }
   };
 

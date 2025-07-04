@@ -5,10 +5,31 @@ import User from "../../../models/User";
 import { getToken } from "next-auth/jwt";
 import { Types } from "mongoose";
 
-interface TimeSlot {
+// Define interfaces within the file
+interface ITimeSlot {
   day: string;
   startTime: string;
   endTime: string;
+}
+
+interface IStudyGroup {
+  _id: Types.ObjectId | string;
+  title?: string;
+  description?: string;
+  members: Types.ObjectId[] | string[];
+}
+
+interface IUser {
+  _id: Types.ObjectId | string;
+  name: string;
+  email?: string;
+  avatar?: string;
+  academicLevel?: string;
+  subjects?: string[];
+  preferredStudyTimes?: ITimeSlot[];
+  learningStyle?: string;
+  studyGoals?: string;
+  joinedGroups?: IStudyGroup[];
 }
 
 interface AvailabilitySlot {
@@ -37,7 +58,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     await connectToDatabase();
-    const group = await StudyGroup.findById(groupId).select("members");
+    const group = await StudyGroup.findById(groupId).select("members").lean<IStudyGroup>();
     if (!group) {
       return res.status(404).json({ error: "Group not found" });
     }
@@ -46,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const users = await User.find(
       { _id: { $in: group.members } },
       { name: 1, preferredStudyTimes: 1 }
-    );
+    ).lean<IUser[]>();
     if (!users.length) {
       return res.status(404).json({ error: "No members found" });
     }
@@ -55,10 +76,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
     for (const day of days) {
-      const slotsByDay: { [userId: string]: TimeSlot[] } = {};
+      const slotsByDay: { [userId: string]: ITimeSlot[] } = {};
       users.forEach((user) => {
-        slotsByDay[user._id.toString()] = user.preferredStudyTimes.filter(
-          (slot: TimeSlot) => slot.day === day
+        slotsByDay[user._id.toString()] = (user.preferredStudyTimes || []).filter(
+          (slot) => slot.day === day
         );
       });
 
@@ -84,17 +105,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-function findOverlaps(slotsByDay: { [userId: string]: TimeSlot[] }): AvailabilitySlot[] {
+function findOverlaps(slotsByDay: { [userId: string]: ITimeSlot[] }): AvailabilitySlot[] {
   const overlaps: AvailabilitySlot[] = [];
   const userIds = Object.keys(slotsByDay);
 
   if (userIds.length < 2) {
-    return slotsByDay[userIds[0]]?.map((slot) => ({
-      day: slot.day,
-      startTime: slot.startTime,
-      endTime: slot.endTime,
-      users: userIds,
-    })) || [];
+    return (
+      slotsByDay[userIds[0]]?.map((slot) => ({
+        day: slot.day,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        users: userIds,
+      })) || []
+    );
   }
 
   for (let i = 0; i < userIds.length; i++) {

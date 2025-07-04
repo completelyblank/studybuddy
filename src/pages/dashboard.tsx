@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import io, { Socket } from "socket.io-client";
 import { DefaultEventsMap } from "@socket.io/component-emitter";
@@ -21,6 +21,7 @@ interface Group {
   _id: string;
   title: string;
   description: string;
+  members?: string[];
 }
 
 interface Match {
@@ -44,9 +45,6 @@ interface EditProfileState {
   studyGoals: string;
 }
 
-
-let socket: Socket<DefaultEventsMap, DefaultEventsMap>;
-
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -64,29 +62,30 @@ export default function Dashboard() {
     learningStyle: "",
     studyGoals: "",
   });
+  const [socket, setSocket] = useState<Socket<DefaultEventsMap, DefaultEventsMap> | null>(null);
 
   useEffect(() => {
     if (!userId) return;
 
-    // Initialize Socket.IO
-    socket = io("http://localhost:3000", {
+    const newSocket = io("http://localhost:3000", {
       path: "/api/socket",
       addTrailingSlash: false,
     });
+    setSocket(newSocket);
 
-    socket.on("connect", () => {
+    newSocket.on("connect", () => {
       console.log("Connected to Socket.IO for dashboard");
-      socket.emit("joinUserRoom", userId);
+      newSocket.emit("joinUserRoom", userId);
     });
 
-    socket.on("matchFound", ({ matchId }) => {
+    newSocket.on("matchFound", ({ matchId }) => {
       toast.success(`Match found! ID: ${matchId}`, {
         position: "top-right",
         autoClose: 5000,
       });
     });
 
-    socket.on("newMessage", ({ chatId, content, sender }) => {
+    newSocket.on("newMessage", ({ chatId, content, sender }) => {
       toast.info(`New message in chat ${chatId} from ${sender}: ${content}`, {
         position: "top-right",
         autoClose: 5000,
@@ -94,7 +93,7 @@ export default function Dashboard() {
       });
     });
 
-    socket.on("sessionReminder", ({ sessionId, time }) => {
+    newSocket.on("sessionReminder", ({ sessionId, time }) => {
       toast.warning(`Session ${sessionId} starts at ${time}`, {
         position: "top-right",
         autoClose: 10000,
@@ -102,14 +101,14 @@ export default function Dashboard() {
       });
     });
 
-    socket.on("error", ({ message }) => {
+    newSocket.on("error", ({ message }) => {
       toast.error(message, {
         position: "top-right",
         autoClose: 5000,
       });
     });
 
-    socket.on("connect_error", (err) => {
+    newSocket.on("connect_error", (err) => {
       console.error("Connection error:", err.message);
       toast.error("Failed to connect to notification server", {
         position: "top-right",
@@ -119,33 +118,37 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const [matchRes, joinedRes, userRes, requestsRes, chatsRes, avatarRes] = await Promise.all([
+        const [matchRes, joinedRes, userRes, requestsRes, chatsRes] = await Promise.all([
           axios.get("/api/resources/matchmaking", { params: { userId }, withCredentials: true }),
           axios.get("/api/groups/user", { params: { userId }, withCredentials: true }),
           axios.get("/api/users/me", { params: { userId }, withCredentials: true }),
           axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
           axios.get("/api/chats/user", { params: { userId }, withCredentials: true }),
-          axios.get("/api/users/avatar", { params: { userId }, withCredentials: true }),
-          
         ]);
 
+        // Transform preferredStudyTimes to a formatted string
+        const formattedPreferredStudyTimes = userRes.data.preferredStudyTimes
+          ?.map((t: { day: string; startTime: string; endTime: string }) => `${t.day}:${t.startTime}-${t.endTime}`)
+          .join(", ") || "";
+
         setMatches(matchRes.data || []);
-        setJoinedGroups(joinedRes.data || []);
+        setJoinedGroups(
+          (joinedRes.data || []).filter((group: Group) => !group.members || group.members.length > 0)
+        );
+        setAvatarUrl(userRes.data.avatar || "https://www.gravatar.com/avatar/?d=mp");
         setPendingRequests(requestsRes.data || []);
         setChats(chatsRes.data || []);
-        setAvatarUrl(avatarRes.data.avatar || "https://www.gravatar.com/avatar/?d=mp");
 
         setEditProfile({
           academicLevel: userRes.data.academicLevel || "",
           subjects: userRes.data.subjects?.join(", ") || "",
-          preferredStudyTimes: userRes.data.preferredStudyTimes?.join(", ") || "",
+          preferredStudyTimes: formattedPreferredStudyTimes,
           learningStyle: userRes.data.learningStyle || "",
           studyGoals: userRes.data.studyGoals || "",
         });
 
-        // Trigger matchFound for new matches
         matchRes.data.forEach((match: Match) => {
-          socket.emit("findMatch", userId);
+          newSocket.emit("findMatch", userId);
         });
       } catch (err) {
         console.error("Dashboard fetch error:", err);
@@ -161,7 +164,7 @@ export default function Dashboard() {
     fetchData();
 
     return () => {
-      if (socket) socket.disconnect();
+      if (newSocket) newSocket.disconnect();
     };
   }, [userId, router]);
 
@@ -176,6 +179,7 @@ export default function Dashboard() {
 
     try {
       await axios.put("/api/users/avatar", { userId, avatar: avatarUrl }, { withCredentials: true });
+      setEditProfile((prev) => ({ ...prev, avatar: avatarUrl }));
       toast.success("Avatar updated successfully", {
         position: "top-right",
         autoClose: 3000,
@@ -196,7 +200,7 @@ export default function Dashboard() {
         .map((t) => t.trim())
         .filter(Boolean)
         .map((t) => {
-          const [day, timeRange] = t.split(" ");
+          const [day, timeRange] = t.split(":");
           const [startTime, endTime] = timeRange?.split("-") || [];
           return {
             day: day || "",
@@ -204,18 +208,20 @@ export default function Dashboard() {
             endTime: endTime || "",
           };
         })
-        .filter((obj) => obj.day && obj.startTime && obj.endTime); // Ensure validity
+        .filter((obj) => obj.day && obj.startTime && obj.endTime);
 
       await axios.put(
         "/api/users/update",
         {
           userId,
-          ...editProfile,
+          academicLevel: editProfile.academicLevel,
           subjects: editProfile.subjects
             .split(",")
             .map((s) => s.trim())
             .filter((s) => s),
           preferredStudyTimes: preferredStudyTimesArray,
+          learningStyle: editProfile.learningStyle,
+          studyGoals: editProfile.studyGoals,
         },
         { withCredentials: true }
       );
@@ -232,7 +238,6 @@ export default function Dashboard() {
       });
     }
   }
-
 
   async function leaveGroup(groupId: string) {
     try {
@@ -284,16 +289,12 @@ export default function Dashboard() {
         autoClose: 3000,
         onClick: status === "approved" && res.data.chatId ? () => router.push(`/chat/${res.data.chatId}`) : undefined,
       });
-      // Fetch updated requests and chats
       const [requestsRes, chatsRes] = await Promise.all([
         axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
         axios.get("/api/chats/user", { params: { userId }, withCredentials: true }),
       ]);
-      console.log("Updated pendingRequests:", requestsRes.data);
-      console.log("Updated chats:", chatsRes.data);
       setPendingRequests(requestsRes.data || []);
       setChats(chatsRes.data || []);
-      // Navigate to chat if approved
       if (status === "approved" && res.data.chatId) {
         router.push(`/chat/${res.data.chatId}`);
       }
@@ -327,7 +328,7 @@ export default function Dashboard() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="p-6 text-white bg-black min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
         <Navbar />
         <p>Loading...</p>
       </div>
@@ -336,7 +337,7 @@ export default function Dashboard() {
 
   if (!session || !userId) {
     return (
-      <div className="p-6 text-white bg-black min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
         <Navbar />
         <p>Please login to view dashboard.</p>
       </div>
@@ -344,7 +345,7 @@ export default function Dashboard() {
   }
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-8">
       <Navbar />
       <h1 className="text-3xl font-bold">Welcome, {session.user.name}</h1>
 
@@ -376,7 +377,7 @@ export default function Dashboard() {
         {[
           { label: "Academic Level", name: "academicLevel" },
           { label: "Subjects (comma separated)", name: "subjects" },
-          { label: "Preferred Study Times", name: "preferredStudyTimes" },
+          { label: "Preferred Study Times (e.g., Monday:10:00-12:00)", name: "preferredStudyTimes" },
           { label: "Learning Style", name: "learningStyle" },
           { label: "Study Goals", name: "studyGoals" },
         ].map(({ label, name }) => (
@@ -384,10 +385,9 @@ export default function Dashboard() {
             <label className="block text-sm mb-1">{label}</label>
             <input
               className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
-              value={editProfile[name as keyof typeof editProfile]}
+              value={editProfile[name as keyof EditProfileState]}
               onChange={(e) => setEditProfile({ ...editProfile, [name]: e.target.value })}
             />
-
           </div>
         ))}
         <button
@@ -409,7 +409,7 @@ export default function Dashboard() {
                 <p className="text-sm">{group.description}</p>
                 <div className="mt-2 space-x-2">
                   <button
-                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
                     onClick={() => router.push(`/chat/group/${group._id}`)}
                   >
                     Open Group Chat
@@ -453,7 +453,7 @@ export default function Dashboard() {
                 {request.status === "pending" && request.receiverId._id === userId && (
                   <div className="mt-2 space-x-2">
                     <button
-                     className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
+                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
                       onClick={() => respondToRequest(request._id, "approved")}
                     >
                       Approve
