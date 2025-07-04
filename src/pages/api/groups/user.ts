@@ -5,12 +5,11 @@ import StudyGroup from "../../../models/StudyGroup";
 import { getToken } from "next-auth/jwt";
 import { Types } from "mongoose";
 
-// Define interfaces within the file
 interface IStudyGroup {
   _id: Types.ObjectId | string;
   title: string;
   description?: string;
-  members: Types.ObjectId[] | string[];
+  members: (Types.ObjectId | string)[];
 }
 
 interface IUser {
@@ -50,6 +49,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         path: "joinedGroups",
         model: StudyGroup,
         select: "title description members",
+        populate: {
+          path: "members",
+          model: User,
+          select: "_id", // Only fetch _id to avoid null references
+        },
       })
       .lean<IUser>();
 
@@ -58,10 +62,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const transformedGroups = (user.joinedGroups || []).map((group) => ({
-      _id: group._id.toString(),
+      _id: group._id?.toString() || "", // Fallback for invalid _id
       title: group.title || "",
       description: group.description || "",
-      members: (group.members || []).map((member) => member.toString()),
+      members: (group.members || [])
+        .filter((member): member is Types.ObjectId | string => member != null) // Filter out null/undefined
+        .map((member) => member.toString()),
     }));
 
     res.status(200).json(transformedGroups);

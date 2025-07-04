@@ -1,4 +1,3 @@
-// components/Whiteboard.tsx
 "use client";
 
 import dynamic from "next/dynamic";
@@ -6,8 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/router";
 import io, { Socket } from "socket.io-client";
 import { DefaultEventsMap } from "@socket.io/component-emitter";
-import { ToastContainer, toast } from "react-toastify"; // Import react-toastify
-import "react-toastify/dist/ReactToastify.css"; // Import styles
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Navbar from "@/src/components/Navbar";
 
 // Dynamically import react-konva components with SSR disabled
 const Stage = dynamic(() => import("react-konva").then((mod) => mod.Stage), { ssr: false });
@@ -77,7 +77,6 @@ export default function Whiteboard() {
       });
     });
 
-    // New Socket.IO events for notifications
     socket.on("matchFound", ({ matchId }) => {
       toast.success(`Match found! ID: ${matchId}`, {
         position: "top-right",
@@ -89,7 +88,7 @@ export default function Whiteboard() {
       toast.info(`New message in chat ${chatId} from ${sender}: ${content}`, {
         position: "top-right",
         autoClose: 5000,
-        onClick: () => router.push(`/chat/${chatId}`), // Navigate to chat
+        onClick: () => router.push(`/chat/${chatId}`),
       });
     });
 
@@ -97,7 +96,7 @@ export default function Whiteboard() {
       toast.warning(`Session ${sessionId} starts at ${time}`, {
         position: "top-right",
         autoClose: 10000,
-        onClick: () => router.push(`/session/${sessionId}`), // Navigate to session
+        onClick: () => router.push(`/session/${sessionId}`),
       });
     });
 
@@ -141,38 +140,58 @@ export default function Whiteboard() {
   };
 
   return (
-    <div className="p-6 text-white bg-black min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Whiteboard for Group {id}</h1>
-      <div id="canvas-container">
-        <p>{isConnected ? "Connected to whiteboard" : "Connecting..."}</p>
-        <Stage
-          width={900}
-          height={500}
-          onMouseDown={handleMouseDown}
-          onMousemove={handleMouseMove}
-          onMouseup={handleMouseUp}
-          className="bg-white rounded shadow-lg"
-        >
-          <Layer>
-            {lines.map((line, i) => (
-              <Line
-                key={i}
-                points={line.points}
-                stroke={line.stroke}
-                strokeWidth={line.strokeWidth}
-                lineCap="round"
-                lineJoin="round"
-              />
-            ))}
-          </Layer>
-        </Stage>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
+      <Navbar />
+      <div className="max-w-4xl mx-auto">
+        <div className="flex items-center gap-4 mb-6">
+          <img src="/logo.png" alt="Logo" className="h-20 w-20 rounded-xl shadow-md" />
+          <h1 className="text-3xl font-bold text-teal-300 drop-shadow-lg">
+            Whiteboard for Group {id}
+          </h1>
+        </div>
+        <div className="bg-white/10 backdrop-blur-md border border-teal-400/40 p-6 rounded-xl shadow-md">
+          <p className="text-gray-300 mb-4">
+            {isConnected ? "Connected to whiteboard" : "Connecting to whiteboard..."}
+          </p>
+          <div id="canvas-container" className="flex justify-center">
+            <Stage
+              width={900}
+              height={500}
+              onMouseDown={handleMouseDown}
+              onMousemove={handleMouseMove}
+              onMouseup={handleMouseUp}
+              className="bg-white rounded-xl shadow-lg"
+            >
+              <Layer>
+                {lines.map((line, i) => (
+                  <Line
+                    key={i}
+                    points={line.points}
+                    stroke={line.stroke}
+                    strokeWidth={line.strokeWidth}
+                    lineCap="round"
+                    lineJoin="round"
+                  />
+                ))}
+              </Layer>
+            </Stage>
+          </div>
+          <div className="flex justify-center gap-4 mt-6">
+            <button
+              onClick={handleClear}
+              className="px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-md transition"
+            >
+              Clear Canvas
+            </button>
+            <button
+              onClick={() => router.push(`/chat/group/${id}`)}
+              className="px-6 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-md transition"
+            >
+              Go to Group Chat
+            </button>
+          </div>
+        </div>
       </div>
-      <button
-        onClick={handleClear}
-        className="mt-4 bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-      >
-        Clear Canvas
-      </button>
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -183,7 +202,7 @@ export default function Whiteboard() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        theme="dark" // Matches your app's dark theme
+        theme="dark"
       />
     </div>
   );

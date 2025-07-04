@@ -61,7 +61,7 @@ export default function DiscoverPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-6">
       <Navbar />
-      <h1 className="text-3xl font-bold">Discover Study Resources & Groups</h1>
+      <h1 className="text-3xl font-bold">Discover Study Resources</h1>
 
       {/* 🔍 Filters */}
       <section className="grid md:grid-cols-3 gap-4">

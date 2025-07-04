@@ -47,7 +47,6 @@ export default function GroupSelectionPage() {
 
     socket.on("connect", () => {
       console.log("Connected to Socket.IO for group selection");
-      // Join user-specific room for notifications
       socket.emit("joinUserRoom", session.user?.id);
     });
 
@@ -119,9 +118,8 @@ export default function GroupSelectionPage() {
       const data = await res.json();
       setMatches(data);
       setLoading(false);
-      // Trigger matchFound notification for each new match
       data.forEach((match: Match) => {
-        socket.emit("findMatch", session?.user?.id); // Trigger matchFound event
+        socket.emit("findMatch", session?.user?.id);
       });
     } catch (err) {
       console.error("Error fetching matches:", err);
@@ -144,7 +142,7 @@ export default function GroupSelectionPage() {
       toast.success(`Successfully joined group ${groupId}`, {
         position: "top-right",
         autoClose: 3000,
-        onClick: () => router.push(`/whiteboard/${groupId}`),
+        onClick: () => router.push(`/chat/group/${groupId}`), // Aligned with CreateGroup
       });
       await fetchGroups(); // Refresh groups
     } catch (err) {
@@ -158,42 +156,52 @@ export default function GroupSelectionPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-black text-white p-8">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
         <Navbar />
-        <p>Please log in to view groups.</p>
+        <p className="text-lg text-center">Please log in to view groups.</p>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white p-8">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
         <Navbar />
-        <p>Loading...</p>
+        <p className="text-lg text-center">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
       <Navbar />
-      <h1 className="text-3xl font-bold mb-4">Join a Study Group</h1>
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-teal-300 drop-shadow-lg mb-6">Join a Study Group</h1>
 
-      <h2 className="text-xl font-semibold mt-6 mb-2">Recommended Study Groups</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {groups.map((group) => (
-          <div key={group._id} className="bg-white/10 backdrop-blur-md border border-teal-400/30 p-4 rounded-lg shadow-md hover:shadow-lg transition">
-            <h3 className="text-lg font-bold">{group.title}</h3>
-            <p>{group.description}</p>
-            <p className="text-sm text-gray-400">Subject: {group.subject}</p>
-            <button className="mt-3 px-4 py-2 rounded-md bg-teal-600 hover:bg-teal-700 font-semibold transition">
-              Join Group
-            </button>
-
-          </div>
-        ))}
+        <h2 className="text-2xl font-semibold text-teal-200 mb-4">Recommended Study Groups</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {groups.map((group) => (
+            <div
+              key={group._id}
+              className="bg-white/10 backdrop-blur-md border border-teal-400/40 p-6 rounded-xl shadow-md hover:scale-[1.02] transition-transform"
+            >
+              <h3 className="text-xl font-semibold text-teal-200">{group.title}</h3>
+              <p className="text-gray-300 mt-2">{group.description}</p>
+              <p className="text-sm text-gray-400 mt-1">Subject: {group.subject}</p>
+              <p className="text-sm text-gray-400">Level: {group.academicLevel || "Not specified"}</p>
+              <p className="text-sm text-gray-400">Meeting: {group.meetingTime || "Not specified"}</p>
+              <p className="text-sm text-gray-400">Type: {group.groupType}</p>
+              <p className="text-sm text-gray-400">Members: {group.members.length}</p>
+              <button
+                onClick={() => joinGroup(group._id)}
+                className="mt-4 px-6 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg shadow-md transition"
+              >
+                Join Group
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
-
       <ToastContainer
         position="top-right"
         autoClose={5000}
