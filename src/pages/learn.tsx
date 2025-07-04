@@ -47,7 +47,7 @@ export default function LearnPage() {
   if (!session) return <p className="text-white p-6">Login required</p>;
 
   return (
-    <div className="min-h-screen p-6 bg-black text-white space-y-8">
+    <div className="min-h-screen p-6 bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white space-y-8">
       <Navbar />
       <h1 className="text-3xl font-bold">Learn: Tutorials & Quizzes</h1>
 
@@ -69,12 +69,12 @@ export default function LearnPage() {
         <h2 className="text-2xl font-semibold mb-2">Available Quizzes</h2>
         <ul className="grid md:grid-cols-3 gap-4">
           {quizzes.map((quiz) => (
-            <li key={quiz._id} className="bg-gray-800 p-4 rounded">
+            <li key={quiz._id} className="bg-white/10 backdrop-blur-md border border-teal-400/30 p-4 rounded-lg shadow transition hover:shadow-lg">
               <p className="font-bold">{quiz.title}</p>
               <p className="text-sm">{quiz.questions.length} questions</p>
               <button
                 onClick={() => setActiveQuiz(quiz)}
-                className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded"
+                className="mt-3 px-4 py-2 bg-teal-600 hover:bg-teal-700 font-semibold rounded transition"
               >
                 Start Quiz
               </button>
@@ -87,7 +87,7 @@ export default function LearnPage() {
             <h3 className="text-xl font-medium">Completed Quizzes</h3>
             <ul className="mt-2 space-y-2">
               {completedQuizzes.map((q, i) => (
-                <li key={i} className="bg-gray-700 p-3 rounded">
+                <li key={i} className="bg-white/5 backdrop-blur border border-teal-300/20 p-3 rounded shadow">
                   Quiz ID: {q.quizId} — Score: {q.score}/10 —{" "}
                   {new Date(q.date).toLocaleDateString()}
                 </li>
@@ -102,7 +102,7 @@ export default function LearnPage() {
         <h2 className="text-2xl font-semibold mb-2">Tutorials</h2>
         <ul className="grid md:grid-cols-3 gap-4">
           {tutorials.map((tut) => (
-            <li key={tut._id} className="bg-gray-800 p-4 rounded">
+           <li key={tut._id} className="bg-white/10 backdrop-blur-md border border-teal-400/30 p-4 rounded-lg shadow transition hover:shadow-lg">
               <p className="font-bold">{tut.title}</p>
               <p className="text-sm text-gray-300">{tut.topic}</p>
               <button
@@ -120,7 +120,7 @@ export default function LearnPage() {
             <h3 className="text-xl font-medium">Completed Tutorials</h3>
             <ul className="mt-2 space-y-2">
               {completedTutorials.map((t, i) => (
-                <li key={i} className="bg-gray-700 p-3 rounded">
+                <li key={i} className="bg-white/5 backdrop-blur border border-teal-300/20 p-3 rounded shadow">
                   Tutorial ID: {t.tutorialId} —{" "}
                   {new Date(t.completedAt).toLocaleDateString()}
                 </li>
