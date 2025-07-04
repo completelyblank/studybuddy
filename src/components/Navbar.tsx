@@ -52,12 +52,12 @@ export default function Navbar() {
   const authLinks: NavLink[] = isSignedIn
     ? [{ href: "#", label: "Sign Out", onClick: handleSignOut }]
     : [
-        { href: "/auth/signin", label: "Sign In" },
-        { href: "/auth/register", label: "Register" },
-      ];
+      { href: "/auth/signin", label: "Sign In" },
+      { href: "/auth/register", label: "Register" },
+    ];
 
   return (
-    <nav className="bg-black text-white shadow-lg">
+    <nav className="bg-black/80 backdrop-blur-lg text-white shadow-md border-b border-teal-500/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* Logo */}
@@ -73,11 +73,11 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  router.pathname === link.href
-                    ? "bg-teal-600 text-white"
-                    : "hover:bg-gray-800 hover:text-teal-500"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${router.pathname === link.href
+                  ? "bg-teal-600 text-white"
+                  : "hover:bg-white/10 hover:text-teal-400"
+                  }`}
+
               >
                 {link.label}
               </Link>
@@ -87,11 +87,10 @@ export default function Navbar() {
                 key={link.href}
                 href={link.href}
                 onClick={link.onClick ? () => link.onClick!() : undefined}
-                className={`px-3 py-2 rounded-md text-sm font-medium ${
-                  router.pathname === link.href
-                    ? "bg-teal-600 text-white"
-                    : "hover:bg-gray-800 hover:text-teal-500"
-                }`}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${router.pathname === link.href
+                  ? "bg-teal-600 text-white"
+                  : "hover:bg-gray-800 hover:text-teal-500"
+                  }`}
               >
                 {link.label}
               </Link>
@@ -128,11 +127,11 @@ export default function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  router.pathname === link.href
+                className={`block px-3 py-2 rounded-md text-base font-medium transition ${router.pathname === link.href
                     ? "bg-teal-600 text-white"
-                    : "hover:bg-gray-800 hover:text-teal-500"
-                }`}
+                    : "hover:bg-white/10 hover:text-teal-400"
+                  }`}
+
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
@@ -148,11 +147,10 @@ export default function Navbar() {
                   }
                   setIsOpen(false);
                 }}
-                className={`block px-3 py-2 rounded-md text-base font-medium ${
-                  router.pathname === link.href
-                    ? "bg-teal-600 text-white"
-                    : "hover:bg-gray-800 hover:text-teal-500"
-                }`}
+                className={`block px-3 py-2 rounded-md text-base font-medium ${router.pathname === link.href
+                  ? "bg-teal-600 text-white"
+                  : "hover:bg-gray-800 hover:text-teal-500"
+                  }`}
               >
                 {link.label}
               </Link>

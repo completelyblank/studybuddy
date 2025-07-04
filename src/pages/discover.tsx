@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import ResourceCard from "../components/ResourceCard";
-import GroupCard from "../components/GroupCard";
 import type { Resource } from "../types/resource_type";
-import { getSession, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import Navbar from "../components/Navbar";
 
 type GroupFeedback = {
@@ -101,7 +100,7 @@ export default function DiscoverPage() {
   };
 
   return (
-    <div className="bg-black min-h-screen text-white p-6 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-6">
       <Navbar />
       <h1 className="text-3xl font-bold">Discover Study Resources & Groups</h1>
 
@@ -114,7 +113,7 @@ export default function DiscoverPage() {
           <div key={key}>
             <label className="block text-sm mb-1">{label}</label>
             <input
-              className="w-full bg-gray-900 p-2 rounded"
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
               value={filters[key as keyof Filters]}
               onChange={(e) =>
                 setFilters({ ...filters, [key]: e.target.value })
@@ -129,7 +128,7 @@ export default function DiscoverPage() {
           <select
             value={minRating}
             onChange={(e) => setMinRating(Number(e.target.value))}
-            className="w-full bg-gray-800 text-white p-2 rounded"
+            className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
           >
             <option value={0}>All Ratings</option>
             <option value={3}>3+ stars</option>
