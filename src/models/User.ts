@@ -1,82 +1,38 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
-export interface IUser extends Document {
+interface IUser {
   name: string;
   email: string;
-  password?: string;
-  avatar?: string;
+  password: string;
   academicLevel?: string;
   subjects: string[];
-  studyGoals?: string;
-  preferredStudyTimes: string[];
+  preferredStudyTimes: { day: string; startTime: string; endTime: string }[];
   learningStyle?: string;
   joinedGroups: mongoose.Types.ObjectId[];
-  interactionHistory: {
-    resource: mongoose.Types.ObjectId;
-    rating: number;
-    viewedAt: Date;
-  }[];
-  groupInteractionHistory: [
-    {
-      group: { type: Schema.Types.ObjectId, ref: "StudyGroup" },
-      rating: Number,
-      comments: String,
-      viewedAt: Date,
-    },
-  ][];
-  matches: mongoose.Types.ObjectId[];
-  completedQuizzes: {
-    quizId: string;
-    score: number;
-    date: Date;
-  }[];
-  completedTutorials: {
-    tutorialId: string;
-    completedAt: Date;
-  }[];
+  interactionHistory: any[];
+  matches: any[];
 }
 
 const userSchema = new Schema<IUser>(
   {
     name: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: false },
-    avatar: String,
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
     academicLevel: String,
     subjects: [String],
-    studyGoals: String,
-    preferredStudyTimes: [String],
+    preferredStudyTimes: [
+      {
+        day: { type: String, required: true },
+        startTime: { type: String, required: true },
+        endTime: { type: String, required: true },
+      },
+    ],
     learningStyle: String,
-    joinedGroups: [{ type: mongoose.Schema.Types.ObjectId, ref: 'StudyGroup' }],
-    interactionHistory: [{
-      resource: { type: mongoose.Schema.Types.ObjectId, ref: 'Resource' },
-      rating: Number,
-      comments: String,
-      viewedAt: Date
-    }],
-    groupInteractionHistory: [
-    {
-      group: { type: mongoose.Schema.Types.ObjectId, ref: "StudyGroup" },
-      rating: Number,
-      comments: String,
-      viewedAt: Date,
-    }],
-    matches: [{ type:mongoose.Schema.Types.ObjectId, ref: 'MatchHistory' }],
-    completedQuizzes: [
-      {
-        quizId: String,
-        score: Number,
-        date: Date,
-      },
-    ],
-    completedTutorials: [
-      {
-        tutorialId: String,
-        completedAt: Date,
-      },
-    ],
+    joinedGroups: [{ type: Schema.Types.ObjectId, ref: "StudyGroup" }],
+    interactionHistory: [Schema.Types.Mixed],
+    matches: [Schema.Types.Mixed],
   },
   { timestamps: true }
 );
 
-export default mongoose.models.User || mongoose.model<IUser>('User', userSchema);
+export default mongoose.models.User || mongoose.model("User", userSchema);

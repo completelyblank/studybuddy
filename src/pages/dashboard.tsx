@@ -2,6 +2,8 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
+import GroupAvailability from "../components/GroupAvailability";
+import Navbar from "../components/Navbar";
 
 interface Chat {
   _id: string;
@@ -186,6 +188,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 text-white bg-black min-h-screen space-y-8">
+      <Navbar />
       <h1 className="text-3xl font-bold">Welcome, {session.user.name}</h1>
 
       {/* 👤 Avatar */}
@@ -241,7 +244,7 @@ export default function Dashboard() {
       <section>
         <h2 className="text-xl font-semibold mb-2">Your Study Groups</h2>
         {joinedGroups.length ? (
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {joinedGroups.map((group) => (
               <li key={group._id} className="bg-gray-800 p-4 rounded">
                 <p className="font-bold">{group.title}</p>
@@ -266,6 +269,9 @@ export default function Dashboard() {
                     Leave Group
                   </button>
                 </div>
+                <div className="mt-4">
+                  <GroupAvailability groupId={group._id} />
+                </div>
               </li>
             ))}
           </ul>
@@ -273,7 +279,7 @@ export default function Dashboard() {
           <p>You haven’t joined any groups yet.</p>
         )}
       </section>
-
+      
       {/* 📬 Pending Study Partner Requests */}
       <section>
         <h2 className="text-xl font-semibold mb-2">Study Partner Requests</h2>

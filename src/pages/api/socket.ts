@@ -15,6 +15,10 @@ export const config = {
 };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponseServerIO) {
+  if (!["GET", "POST"].includes(req.method as string)) {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   try {
     if (!res.socket.server.io) {
       console.log("✅ Socket.IO server initializing...");
@@ -22,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
         path: "/api/socket",
         addTrailingSlash: false,
         cors: {
-          origin: "http://localhost:3000", // Ensure client origin is allowed
+          origin: "http://localhost:3000",
           methods: ["GET", "POST"],
           credentials: true,
         },
@@ -32,6 +36,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
       io.on("connection", (socket) => {
         console.log("🟢 Client connected:", socket.id);
 
+        // Handle joining a whiteboard room
+        socket.on("joinWhiteboard", (groupId: string) => {
+          if (!groupId) {
+            console.error("No groupId provided for joinWhiteboard");
+            socket.emit("error", { message: "Group ID is required" });
+            return;
+          }
+          console.log(`User joined whiteboard: ${groupId}`);
+          socket.join(`whiteboard-${groupId}`);
+          socket.emit("joinedWhiteboard", { groupId }); // Confirm join to client
+        });
+
+        // Handle draw events
+        socket.on("draw", ({ groupId, ...drawData }: { groupId: string }) => {
+          if (!groupId) {
+            console.error("No groupId provided for draw");
+            socket.emit("error", { message: "Group ID is required" });
+            return;
+          }
+          console.log(`Draw event received for group ${groupId}:`, drawData);
+          io.to(`whiteboard-${groupId}`).emit("draw", drawData);
+        });
+
+        // Handle clear events
+        socket.on("clear", (groupId: string) => {
+          if (!groupId) {
+            console.error("No groupId provided for clear");
+            socket.emit("error", { message: "Group ID is required" });
+            return;
+          }
+          console.log(`Clear event received for group ${groupId}`);
+          io.to(`whiteboard-${groupId}`).emit("clear");
+        });
+
+        // Existing chat-related handlers
         socket.on("joinChat", (chatId: string) => {
           console.log(`User joined chat: ${chatId}`);
           socket.join(chatId);
@@ -75,13 +114,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponseS
           socket.join(`group-${groupId}`);
         });
 
-        socket.on("chatMessage", async ({ roomId, message, sender }) => {
+        socket.on("chatMessage", async ({ roomId, message, sender }: { roomId: string; message: string; sender: string }) => {
           try {
             console.log(`Processing chatMessage: roomId=${roomId}, sender=${sender}, message=${message}`);
             await dbConnect();
             let groupChat = await GroupChat.findOne({ groupId: roomId });
             if (!groupChat) {
-              groupChat = new GroupChat({ groupId: roomId, messages: [] });
+              groupChat = new GroupChat({ groupId: roomId, messages: [], name: "Unnamed Group", creatorId: sender });
+              await groupChat.save();
             }
             const newMessage = { sender, content: message, timestamp: new Date() };
             groupChat.messages.push(newMessage);

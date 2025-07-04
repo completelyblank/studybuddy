@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/router";
+import Navbar from "@/src/components/Navbar";
 
 interface Group {
   _id: string;
@@ -66,6 +67,7 @@ export default function GroupSelectionPage() {
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
+      <Navbar />
       <h1 className="text-3xl font-bold mb-4">Join a Study Group</h1>
 
       <h2 className="text-xl font-semibold mt-6 mb-2">Recommended Study Groups</h2>

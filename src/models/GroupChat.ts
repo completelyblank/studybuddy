@@ -1,11 +1,15 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
-const GroupChatSchema = new mongoose.Schema({
-  groupId: { type: mongoose.Schema.Types.ObjectId, ref: "Group", required: true },
+const GroupChatSchema = new Schema({
+  groupId: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  description: { type: String, default: "" },
+  creatorId: { type: String, required: true },
+  members: [{ type: String }], // Array of user IDs
   messages: [
     {
-      sender: String, // Email or name of the sender
-      content: String,
+      sender: { type: String }, // User ID or name
+      content: { type: String },
       timestamp: { type: Date, default: Date.now },
     },
   ],

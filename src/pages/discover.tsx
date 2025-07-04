@@ -4,6 +4,7 @@ import ResourceCard from "../components/ResourceCard";
 import GroupCard from "../components/GroupCard";
 import type { Resource } from "../types/resource_type";
 import { getSession, useSession } from "next-auth/react";
+import Navbar from "../components/Navbar";
 
 type GroupFeedback = {
   user: string;
@@ -101,6 +102,7 @@ export default function DiscoverPage() {
 
   return (
     <div className="bg-black min-h-screen text-white p-6 space-y-6">
+      <Navbar />
       <h1 className="text-3xl font-bold">Discover Study Resources & Groups</h1>
 
       {/* 🔍 Filters */}

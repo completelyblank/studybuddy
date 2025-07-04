@@ -4,6 +4,7 @@ import axios from "axios";
 import { useSession } from "next-auth/react";
 import QuizPlayer from "../components/QuizPlayer";
 import TutorialViewer from "../components/TutorialViewer";
+import Navbar from "../components/Navbar";
 
 export default function LearnPage() {
     const { data: session } = useSession();
@@ -39,6 +40,7 @@ export default function LearnPage() {
 
     return (
         <div className="min-h-screen p-6 bg-black text-white space-y-8">
+            <Navbar />
             <h1 className="text-3xl font-bold">Learn: Tutorials & Quizzes</h1>
 
             {/* ✅ Active Content */}
