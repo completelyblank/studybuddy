@@ -48,44 +48,27 @@ export default function Register() {
   };
 
   const validateTime = (time: string): boolean => {
-    return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time); // HH:MM format
+    return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(time);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validate required fields
-    if (!formData.name.trim()) {
-      setError("Name is required");
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError("Email is required");
-      return;
-    }
-    if (!formData.password.trim()) {
-      setError("Password is required");
-      return;
-    }
-    if (!formData.subjects.trim()) {
-      setError("At least one subject is required");
-      return;
-    }
+    if (!formData.name.trim()) return setError("Name is required");
+    if (!formData.email.trim()) return setError("Email is required");
+    if (!formData.password.trim()) return setError("Password is required");
+    if (!formData.subjects.trim()) return setError("At least one subject is required");
 
-    // Validate preferredStudyTimes
     for (const slot of preferredStudyTimes) {
       if (slot.startTime && !validateTime(slot.startTime)) {
-        setError("Invalid start time format (use HH:MM, e.g., 09:00)");
-        return;
+        return setError("Invalid start time format (use HH:MM)");
       }
       if (slot.endTime && !validateTime(slot.endTime)) {
-        setError("Invalid end time format (use HH:MM, e.g., 11:00)");
-        return;
+        return setError("Invalid end time format (use HH:MM)");
       }
       if ((slot.startTime && !slot.endTime) || (!slot.startTime && slot.endTime)) {
-        setError("Both start and end times are required for each time slot");
-        return;
+        return setError("Both start and end times are required");
       }
     }
 
@@ -106,106 +89,69 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex justify-center items-center">
-      <form onSubmit={handleSubmit} className="bg-gray-900 p-6 rounded-lg shadow-lg w-full max-w-md space-y-4">
-        <h2 className="text-2xl font-bold text-center">Register</h2>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white flex justify-center items-center p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-lg bg-white/10 backdrop-blur-md border border-teal-400/40 p-8 rounded-xl shadow-xl space-y-5"
+      >
+        <h2 className="text-3xl font-bold text-center text-teal-300 drop-shadow">Register</h2>
 
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-400 text-center text-sm">{error}</p>}
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
-            name="name"
-            placeholder="Enter your name"
-            required
-            onChange={handleChange}
-            value={formData.name}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            name="email"
-            placeholder="Enter your email"
-            required
-            type="email"
-            onChange={handleChange}
-            value={formData.email}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            name="password"
-            placeholder="Enter your password"
-            required
-            type="password"
-            onChange={handleChange}
-            value={formData.password}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
+        {[
+          { label: "Name", name: "name", type: "text", placeholder: "Enter your name" },
+          { label: "Email", name: "email", type: "email", placeholder: "Enter your email" },
+          { label: "Password", name: "password", type: "password", placeholder: "Enter your password" },
+          { label: "Academic Level (Optional)", name: "academicLevel", type: "text", placeholder: "e.g., Undergraduate" },
+          { label: "Subjects (Comma-separated)", name: "subjects", type: "text", placeholder: "e.g., Math, Physics" },
+          { label: "Learning Style (Optional)", name: "learningStyle", type: "text", placeholder: "e.g., Visual, Auditory" },
+        ].map(({ label, name, type, placeholder }) => (
+          <div key={name}>
+            <label className="block text-sm font-medium text-blue-200 mb-1">{label}</label>
+            <input
+              name={name}
+              type={type}
+              placeholder={placeholder}
+              value={(formData as any)[name]}
+              onChange={handleChange}
+              required={name !== "academicLevel" && name !== "learningStyle"}
+              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
+            />
+          </div>
+        ))}
 
         <div>
-          <label className="block text-sm font-medium mb-1">Academic Level (Optional)</label>
-          <input
-            name="academicLevel"
-            placeholder="e.g., Undergraduate"
-            onChange={handleChange}
-            value={formData.academicLevel}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Subjects (Comma-separated)</label>
-          <input
-            name="subjects"
-            placeholder="e.g., Math, Physics"
-            onChange={handleChange}
-            value={formData.subjects}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Preferred Study Times</label>
+          <label className="block text-sm font-medium text-blue-200 mb-1">Preferred Study Times</label>
           {preferredStudyTimes.map((slot, index) => (
             <div key={index} className="mb-2 flex space-x-2">
               <select
                 value={slot.day}
                 onChange={(e) => handleTimeSlotChange(index, "day", e.target.value)}
-                className="w-1/3 p-2 rounded bg-gray-800"
+                className="w-1/3 px-2 py-2 rounded bg-white/5 border border-gray-600 text-white"
               >
                 {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((day) => (
-                  <option key={day} value={day}>
-                    {day}
-                  </option>
+                  <option key={day} value={day}>{day}</option>
                 ))}
               </select>
               <input
                 placeholder="Start (HH:MM)"
                 value={slot.startTime}
                 onChange={(e) => handleTimeSlotChange(index, "startTime", e.target.value)}
-                className="w-1/3 p-2 rounded bg-gray-800"
+                className="w-1/3 px-2 py-2 rounded bg-white/5 border border-gray-600 text-white"
               />
               <input
                 placeholder="End (HH:MM)"
                 value={slot.endTime}
                 onChange={(e) => handleTimeSlotChange(index, "endTime", e.target.value)}
-                className="w-1/3 p-2 rounded bg-gray-800"
+                className="w-1/3 px-2 py-2 rounded bg-white/5 border border-gray-600 text-white"
               />
               {preferredStudyTimes.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeTimeSlot(index)}
-                  className="text-red-500 ml-2"
+                  className="text-red-400 text-sm ml-2"
                 >
-                  Remove
+                  ✕
                 </button>
               )}
             </div>
@@ -213,24 +159,16 @@ export default function Register() {
           <button
             type="button"
             onClick={addTimeSlot}
-            className="text-teal-500 text-sm mt-2"
+            className="mt-2 text-sm text-teal-400 hover:underline"
           >
-            Add Time Slot
+            + Add Time Slot
           </button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Learning Style (Optional)</label>
-          <input
-            name="learningStyle"
-            placeholder="e.g., Visual, Auditory"
-            onChange={handleChange}
-            value={formData.learningStyle}
-            className="w-full p-2 rounded bg-gray-800"
-          />
-        </div>
-
-        <button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 p-2 rounded">
+        <button
+          type="submit"
+          className="w-full bg-teal-600 hover:bg-teal-700 py-2 px-4 rounded-lg text-white font-semibold shadow-md transition"
+        >
           Register
         </button>
       </form>
