@@ -11,8 +11,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const session = await getServerSession(req, res, authOptions);
-
-  // Narrow and safely type session
   const userId = (session as any)?.user?.id;
 
   if (!userId) {
@@ -22,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await connectToDatabase();
 
   try {
-    const user = await User.findById(userId).lean<IUser>(); // use IUser typing explicitly
+    const user = await User.findById(userId).lean<IUser>();
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -32,6 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       id: user._id.toString(),
       name: user.name,
       email: user.email,
+      avatar: user.avatar ?? null, // ✅ Add avatar to the response
       joinedGroups: (user.joinedGroups || []).map((group: any) => {
         if (typeof group === "object" && group._id) {
           return {
@@ -40,7 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             description: group.description ?? "",
           };
         }
-        return { _id: group.toString(), title: "", description: "" }; // fallback
+        return { _id: group.toString(), title: "", description: "" };
       }),
     });
 

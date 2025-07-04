@@ -50,7 +50,7 @@ export default function TutorialViewer({ tutorial }: { tutorial: Tutorial }) {
   }
 
   return (
-    <div className="bg-gray-900 p-4 rounded shadow-md text-white">
+    <div className="bg-white/10 backdrop-blur-md border border-teal-300/20 p-6 rounded-lg text-white shadow">
       <h2 className="text-xl font-bold mb-2">{tutorial.title}</h2>
 
       {/* Content Display */}
@@ -82,9 +82,9 @@ export default function TutorialViewer({ tutorial }: { tutorial: Tutorial }) {
       {tutorial.estimatedTime && (
         <div className="mt-4">
           <div className="text-sm mb-1">Progress: {Math.min((progress / (tutorial.estimatedTime || 60)) * 100, 100).toFixed(0)}%</div>
-          <div className="w-full bg-gray-700 h-2 rounded">
+          <div className="w-full bg-white/10 h-2 rounded">
             <div
-              className="bg-green-500 h-2 rounded"
+              className="bg-teal-400 h-2 rounded transition-all duration-300" 
               style={{ width: `${(progress / (tutorial.estimatedTime || 60)) * 100}%` }}
             />
           </div>

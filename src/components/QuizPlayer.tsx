@@ -74,7 +74,7 @@ export default function QuizPlayer({ questions, quizId }: QuizPlayerProps) {
 
     if (complete) {
         return (
-            <div className="text-center text-green-400 bg-gray-900 p-6 rounded-lg">
+            <div className="bg-white/10 backdrop-blur-lg border border-teal-400/30 p-6 rounded-lg space-y-4 text-white shadow">
                 <h2 className="text-2xl font-bold">Quiz Completed</h2>
                 <p className="mt-2">
                     You scored <span className="font-semibold">{score}</span> out of{" "}
@@ -87,7 +87,7 @@ export default function QuizPlayer({ questions, quizId }: QuizPlayerProps) {
     const currentQuestion = questions[current];
 
     return (
-        <div className="bg-gray-800 p-6 rounded-lg space-y-4 text-white">
+        <div className="bg-white/10 backdrop-blur-lg border border-teal-400/30 p-6 rounded-lg space-y-4 text-white shadow">
             <div className="flex justify-between items-center">
                 <p>
                     <strong>Question {current + 1}</strong> / {questions.length}
@@ -107,10 +107,11 @@ export default function QuizPlayer({ questions, quizId }: QuizPlayerProps) {
                                 key={i}
                                 className={`p-3 rounded cursor-pointer transition ${answered
                                         ? isCorrect
-                                            ? "bg-green-600"
-                                            : "bg-red-600"
-                                        : "bg-gray-700 hover:bg-gray-600"
+                                            ? "bg-green-500/80"
+                                            : "bg-red-500/80"
+                                        : "bg-white/10 hover:bg-white/20"
                                     }`}
+
                                 onClick={() => handleAnswer(i)}
                             >
                                 {opt}

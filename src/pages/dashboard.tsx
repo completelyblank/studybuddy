@@ -119,19 +119,21 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       try {
-        const [matchRes, joinedRes, userRes, requestsRes, chatsRes] = await Promise.all([
+        const [matchRes, joinedRes, userRes, requestsRes, chatsRes, avatarRes] = await Promise.all([
           axios.get("/api/resources/matchmaking", { params: { userId }, withCredentials: true }),
           axios.get("/api/groups/user", { params: { userId }, withCredentials: true }),
           axios.get("/api/users/me", { params: { userId }, withCredentials: true }),
           axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
           axios.get("/api/chats/user", { params: { userId }, withCredentials: true }),
+          axios.get("/api/users/avatar", { params: { userId }, withCredentials: true }),
+          
         ]);
 
         setMatches(matchRes.data || []);
         setJoinedGroups(joinedRes.data || []);
-        setAvatarUrl(userRes.data.avatar || "");
         setPendingRequests(requestsRes.data || []);
         setChats(chatsRes.data || []);
+        setAvatarUrl(avatarRes.data.avatar || "https://www.gravatar.com/avatar/?d=mp");
 
         setEditProfile({
           academicLevel: userRes.data.academicLevel || "",

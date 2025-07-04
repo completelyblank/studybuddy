@@ -5,7 +5,11 @@ import { getSession } from "next-auth/react";
 import axios from "axios";
 
 interface ChatMessage {
-  senderId: { _id: string; name: string };
+  senderId: {
+    _id: string;
+    name: string;
+    avatar?: string; // this matches what backend sends (not avatarUrl)
+  };
   content: string;
   timestamp: string;
 }
@@ -13,9 +17,14 @@ interface ChatMessage {
 export default function ChatRoom() {
   const router = useRouter();
   const { id } = router.query; // Chat ID
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [currentUser, setCurrentUser] = useState<{ id: string; name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id: string;
+    name: string;
+    avatar?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
@@ -26,7 +35,11 @@ export default function ChatRoom() {
       try {
         const session = await getSession();
         if (session?.user) {
-          setCurrentUser({ id: session.user.id, name: session.user.name || "Anonymous" });
+          setCurrentUser({
+            id: session.user.id,
+            name: session.user.name || "Anonymous",
+            avatar: session.user.image || "https://www.gravatar.com/avatar/?d=mp",
+          });
         } else {
           setError("Please log in to chat");
         }
@@ -46,8 +59,9 @@ export default function ChatRoom() {
 
     const fetchMessages = async () => {
       try {
-        const res = await axios.get(`/api/chats/${id}`, { withCredentials: true });
-        console.log("Fetched messages:", res.data.messages);
+        const res = await axios.get(`/api/chats/${id}`, {
+          withCredentials: true,
+        });
         setMessages(res.data.messages || []);
       } catch (err) {
         console.error("Error fetching messages:", err);
@@ -74,7 +88,6 @@ export default function ChatRoom() {
     });
 
     socket.on("message", (msg: ChatMessage) => {
-      console.log("Received real-time message:", msg);
       setMessages((prev) => [...prev, msg]);
     });
 
@@ -85,7 +98,6 @@ export default function ChatRoom() {
 
     return () => {
       socket.disconnect();
-      console.log("Socket.IO disconnected");
     };
   }, [id, currentUser]);
 
@@ -96,7 +108,6 @@ export default function ChatRoom() {
         userId: currentUser.id,
         content: input,
       };
-      console.log("Sending message:", message);
       socketRef.current.emit("sendMessage", message);
       setInput("");
     }
@@ -106,32 +117,63 @@ export default function ChatRoom() {
   if (error) return <p className="p-6 text-red-500">{error}</p>;
 
   return (
-    <div className="p-6 text-white bg-black min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Chat</h1>
-      <div className="space-y-2 mb-4 max-h-[60vh] overflow-y-auto">
-        {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`p-2 rounded ${
-              msg.senderId._id === currentUser?.id ? "bg-blue-600 ml-auto" : "bg-gray-700"
-            } max-w-[70%]`}
-          >
-            <strong>{msg.senderId.name || "Unknown"}:</strong> {msg.content}
-            <span className="text-xs text-gray-400 ml-2">
-              {new Date(msg.timestamp).toLocaleTimeString()}
-            </span>
-          </div>
-        ))}
+    <div className="p-6 text-white bg-gradient-to-br from-black via-[#0f2027] to-[#203a43] min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-teal-400">💬 Group Chat</h1>
+
+      <div className="space-y-3 mb-6 max-h-[60vh] overflow-y-auto pr-2">
+        {messages.map((msg, idx) => {
+          const isCurrentUser = msg.senderId._id === currentUser?.id;
+
+          return (
+            <div
+              key={idx}
+              className={`flex items-start ${isCurrentUser ? "justify-end" : "justify-start"}`}
+            >
+              {!isCurrentUser && (
+                <img
+                  src={msg.senderId.avatar || "https://www.gravatar.com/avatar/?d=mp"}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full mr-2"
+                />
+              )}
+
+              <div
+                className={`rounded-lg p-3 text-sm max-w-[70%] shadow ${isCurrentUser
+                    ? "bg-teal-600 text-white"
+                    : "bg-white/10 backdrop-blur-md text-white"
+                  }`}
+              >
+                <div className="font-semibold">{msg.senderId.name}</div>
+                <div>{msg.content}</div>
+                <div className="text-xs text-gray-300 mt-1 text-right">
+                  {new Date(msg.timestamp).toLocaleTimeString()}
+                </div>
+              </div>
+
+              {isCurrentUser && (
+                <img
+                  src={msg.senderId.avatar || "https://www.gravatar.com/avatar/?d=mp"}
+                  alt="avatar"
+                  className="w-8 h-8 rounded-full ml-2"
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
-      <div className="flex gap-2">
+
+      <div className="flex gap-2 mt-4">
         <input
-          className="bg-gray-800 p-2 rounded text-white flex-1"
+          className="bg-white/10 backdrop-blur text-white p-2 rounded flex-1 border border-teal-500 focus:outline-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your message..."
-          onKeyPress={(e) => e.key === "Enter" && sendMessage()}
+          onKeyDown={(e) => e.key === "Enter" && sendMessage()}
         />
-        <button className="bg-teal-600 px-4 py-2 rounded" onClick={sendMessage}>
+        <button
+          className="bg-teal-600 hover:bg-teal-700 px-4 py-2 rounded transition font-semibold"
+          onClick={sendMessage}
+        >
           Send
         </button>
       </div>

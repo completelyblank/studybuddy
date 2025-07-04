@@ -10,6 +10,7 @@ export interface IUser {
   subjects: string[];
   preferredStudyTimes: { day: string; startTime: string; endTime: string }[];
   learningStyle?: string;
+  avatar?: string; // ✅ Add this line
   joinedGroups: mongoose.Types.ObjectId[];
   interactionHistory: any[];
   matches: any[];
@@ -21,6 +22,7 @@ const userSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     academicLevel: String,
+    avatar: String, // ✅ Add this line
     subjects: [String],
     preferredStudyTimes: [
       {

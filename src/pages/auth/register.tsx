@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
 
 interface TimeSlot {
   day: string;
@@ -52,41 +53,60 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
 
-    if (!formData.name.trim()) return setError("Name is required");
-    if (!formData.email.trim()) return setError("Email is required");
-    if (!formData.password.trim()) return setError("Password is required");
-    if (!formData.subjects.trim()) return setError("At least one subject is required");
+  if (!formData.name.trim()) {
+    toast.error("Name is required");
+    return;
+  }
+  if (!formData.email.trim()) {
+    toast.error("Email is required");
+    return;
+  }
+  if (!formData.password.trim()) {
+    toast.error("Password is required");
+    return;
+  }
+  if (!formData.subjects.trim()) {
+    toast.error("At least one subject is required");
+    return;
+  }
 
-    for (const slot of preferredStudyTimes) {
-      if (slot.startTime && !validateTime(slot.startTime)) {
-        return setError("Invalid start time format (use HH:MM)");
-      }
-      if (slot.endTime && !validateTime(slot.endTime)) {
-        return setError("Invalid end time format (use HH:MM)");
-      }
-      if ((slot.startTime && !slot.endTime) || (!slot.startTime && slot.endTime)) {
-        return setError("Both start and end times are required");
-      }
+  for (const slot of preferredStudyTimes) {
+    if (slot.startTime && !validateTime(slot.startTime)) {
+      toast.error("Invalid start time format (use HH:MM)");
+      return;
     }
-
-    try {
-      await axios.post("/api/auth/register", {
-        ...formData,
-        subjects: formData.subjects.split(",").map((s) => s.trim()).filter((s) => s),
-        preferredStudyTimes: preferredStudyTimes.filter(
-          (slot) => slot.startTime && slot.endTime
-        ),
-      });
-      alert("Registration successful!");
-      router.push("/auth/signin");
-    } catch (err: any) {
-      console.error("Registration error:", err);
-      setError(err.response?.data?.message || "Registration failed");
+    if (slot.endTime && !validateTime(slot.endTime)) {
+      toast.error("Invalid end time format (use HH:MM)");
+      return;
     }
-  };
+    if ((slot.startTime && !slot.endTime) || (!slot.startTime && slot.endTime)) {
+      toast.error("Both start and end times are required");
+      return;
+    }
+  }
+
+  try {
+    await axios.post("/api/auth/register", {
+      ...formData,
+      subjects: formData.subjects.split(",").map((s) => s.trim()).filter((s) => s),
+      preferredStudyTimes: preferredStudyTimes.filter(
+        (slot) => slot.startTime && slot.endTime
+      ),
+    });
+
+    toast.success("Registration successful! Redirecting...", {
+      onClose: () => router.push("/auth/signin"),
+      autoClose: 2000,
+    });
+
+  } catch (err: any) {
+    console.error("Registration error:", err);
+    toast.error(err.response?.data?.message || "Registration failed");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white flex justify-center items-center p-6">
@@ -95,9 +115,6 @@ export default function Register() {
         className="w-full max-w-lg bg-white/10 backdrop-blur-md border border-teal-400/40 p-8 rounded-xl shadow-xl space-y-5"
       >
         <h2 className="text-3xl font-bold text-center text-teal-300 drop-shadow">Register</h2>
-
-        {error && <p className="text-red-400 text-center text-sm">{error}</p>}
-
         {[
           { label: "Name", name: "name", type: "text", placeholder: "Enter your name" },
           { label: "Email", name: "email", type: "email", placeholder: "Enter your email" },
@@ -172,6 +189,19 @@ export default function Register() {
           Register
         </button>
       </form>
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+      />
+
     </div>
   );
 }

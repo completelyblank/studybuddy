@@ -16,7 +16,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const chat = await Chat.findById(id).populate("participants", "name email avatar").populate("messages.senderId", "name");
+    const chat = await Chat.findById(id).populate("messages.senderId", "name avatar")
+
     if (!chat) {
       return res.status(404).json({ error: "Chat not found" });
     }
