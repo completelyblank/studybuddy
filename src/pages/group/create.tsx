@@ -24,7 +24,7 @@ export default function CreateGroup() {
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
   const [subject, setSubject] = useState("");
-  const [academicLevel, setAcademicLevel] = useState("");
+  const [academicLevel, setAcademicLevel] = useState("");
   const [meetingTime, setMeetingTime] = useState("");
   const [groupType, setGroupType] = useState<"Virtual" | "In-Person">("Virtual");
   const [groupId, setGroupId] = useState("");
@@ -41,7 +41,6 @@ export default function CreateGroup() {
         if (session?.user) {
           setUser({ id: session.user.id, name: session.user.name || "Anonymous" });
 
-          // Initialize Socket.IO
           socket = io("http://localhost:3000", {
             path: "/api/socket",
             addTrailingSlash: false,
@@ -204,7 +203,6 @@ export default function CreateGroup() {
     }
     setError(null);
     try {
-      // Verify group exists and join
       const response = await axios.post(
         "/api/groups/join",
         {
@@ -234,86 +232,86 @@ export default function CreateGroup() {
 
   if (isSessionLoading) {
     return (
-      <div className="p-6 text-white bg-black min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
         <Navbar />
-        <p>Loading...</p>
+        <p className="text-lg text-center">Loading...</p>
       </div>
     );
   }
 
   if (error && !user) {
     return (
-      <div className="p-6 text-white bg-black min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
         <Navbar />
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-400 text-lg text-center">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 text-white bg-black min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
       <Navbar />
-      <h1 className="text-2xl font-bold mb-4">Create or Join a Study Group</h1>
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md mx-auto mt-4">
+        <h1 className="text-3xl font-bold text-teal-300 drop-shadow-lg mb-6 flex-col justify-center">Create a Study Group</h1>
+
         {/* Group Creation Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Create a Study Group</h2>
+        <div className="mb-8 bg-white/10 backdrop-blur-md border border-teal-400/40 p-6 rounded-xl shadow-lg">
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Group Name</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Group Name</label>
             <input
               type="text"
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Enter group name"
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Subject</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Subject</label>
             <input
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Enter subject (e.g., Math)"
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Description (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Description (Optional)</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Enter group description"
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
               rows={4}
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Academic Level (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Academic Level (Optional)</label>
             <input
               type="text"
               value={academicLevel}
               onChange={(e) => setAcademicLevel(e.target.value)}
               placeholder="Enter academic level (e.g., Undergraduate)"
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Meeting Time (Optional)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Meeting Time (Optional)</label>
             <input
               type="text"
               value={meetingTime}
               onChange={(e) => setMeetingTime(e.target.value)}
               placeholder="Enter meeting time (e.g., Mon 9-11 AM)"
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             />
           </div>
           <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Group Type</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Group Type</label>
             <select
               value={groupType}
               onChange={(e) => setGroupType(e.target.value as "Virtual" | "In-Person")}
-              className="w-full p-2 bg-gray-800 text-white rounded"
+              className="w-full p-3 bg-white/5 border border-teal-400/40 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
             >
               <option value="Virtual">Virtual</option>
               <option value="In-Person">In-Person</option>
@@ -322,34 +320,15 @@ export default function CreateGroup() {
           <button
             onClick={handleCreateGroup}
             disabled={loading}
-            className={`w-full p-2 rounded ${loading ? "bg-gray-600" : "bg-teal-600 hover:bg-teal-700"} text-white`}
+            className={`w-full p-3 rounded-lg shadow-md transition ${
+              loading ? "bg-gray-600 cursor-not-allowed" : "bg-teal-500 hover:bg-teal-600"
+            } text-white`}
           >
             {loading ? "Creating..." : "Create Group"}
           </button>
         </div>
 
-        {/* Group Search Section */}
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Join a Study Group</h2>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">Group ID</label>
-            <input
-              type="text"
-              value={groupId}
-              onChange={(e) => setGroupId(e.target.value)}
-              placeholder="Enter group ID (e.g., 68666afb5d071cc177867831)"
-              className="w-full p-2 bg-gray-800 text-white rounded"
-            />
-          </div>
-          <button
-            onClick={handleSearchGroup}
-            className="w-full p-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            Join Group
-          </button>
-        </div>
-
-        {error && <p className="text-red-500 mb-4">{error}</p>}
+        {error && <p className="text-red-400 text-lg text-center">{error}</p>}
       </div>
       <ToastContainer
         position="top-right"

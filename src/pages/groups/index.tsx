@@ -194,17 +194,6 @@ export default function GroupSelectionPage() {
         ))}
       </div>
 
-      <h2 className="text-xl font-semibold mt-10 mb-2">Matchmaking: Suggested Study Partners</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {matches.map((match) => (
-          <div key={match.userId} className="bg-white/5 backdrop-blur-md border border-teal-300/30 p-4 rounded-lg shadow">
-            <h3 className="font-bold">{match.name}</h3>
-            <p className="text-sm">{match.email}</p>
-            <p className="text-sm text-teal-400">Compatibility Score: {(match.score * 100).toFixed(0)}%</p>
-          </div>
-        ))}
-      </div>
-
       <ToastContainer
         position="top-right"
         autoClose={5000}
