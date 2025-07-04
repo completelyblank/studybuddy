@@ -175,23 +175,21 @@ export default function GroupSelectionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
       <Navbar />
       <h1 className="text-3xl font-bold mb-4">Join a Study Group</h1>
 
       <h2 className="text-xl font-semibold mt-6 mb-2">Recommended Study Groups</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {groups.map((group) => (
-          <div key={group._id} className="bg-gray-800 p-4 rounded shadow-md">
+          <div key={group._id} className="bg-white/10 backdrop-blur-md border border-teal-400/30 p-4 rounded-lg shadow-md hover:shadow-lg transition">
             <h3 className="text-lg font-bold">{group.title}</h3>
             <p>{group.description}</p>
             <p className="text-sm text-gray-400">Subject: {group.subject}</p>
-            <button
-              className="mt-2 px-3 py-1 bg-teal-600 hover:bg-teal-700 rounded"
-              onClick={() => joinGroup(group._id)}
-            >
+            <button className="mt-3 px-4 py-2 rounded-md bg-teal-600 hover:bg-teal-700 font-semibold transition">
               Join Group
             </button>
+
           </div>
         ))}
       </div>
@@ -199,7 +197,7 @@ export default function GroupSelectionPage() {
       <h2 className="text-xl font-semibold mt-10 mb-2">Matchmaking: Suggested Study Partners</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {matches.map((match) => (
-          <div key={match.userId} className="bg-gray-700 p-4 rounded shadow-md">
+          <div key={match.userId} className="bg-white/5 backdrop-blur-md border border-teal-300/30 p-4 rounded-lg shadow">
             <h3 className="font-bold">{match.name}</h3>
             <p className="text-sm">{match.email}</p>
             <p className="text-sm text-teal-400">Compatibility Score: {(match.score * 100).toFixed(0)}%</p>
