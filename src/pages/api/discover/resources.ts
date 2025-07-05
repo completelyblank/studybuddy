@@ -4,67 +4,101 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import dbConnect from "../../../utils/dbConnect";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await dbConnect();
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
+    await dbConnect();
+
     // Extract query parameters
     const { subject, academicLevel, time } = req.query;
 
     // Build the query object for filtering
     const query: any = {};
-    if (subject) query.subject = { $regex: String(subject), $options: 'i' }; // Case-insensitive match
-    if (academicLevel) query.academicLevel = String(academicLevel);
-    if (time) {
-      // Example: Filter resources created after the given time
-      query.createdAt = { $gte: new Date(String(time)) };
+    
+    // Filter by subject tags (case-insensitive)
+    if (subject && typeof subject === 'string' && subject.trim()) {
+      query.subjectTags = { 
+        $regex: subject.trim(), 
+        $options: 'i' 
+      };
     }
-
-    // Fetch filtered resources
-    const resources = await Resource.find(query);
-    const allUsers = await User.find({});
-
-    const resourceRatings: {
-      [key: string]: { total: number; count: number };
-    } = {};
-
-    const seen = new Set<string>();
-
-    for (const user of allUsers) {
-      for (const item of user.interactionHistory) {
-        const key = `${user._id}-${item.resource}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        const id = item.resource.toString();
-        if (!resourceRatings[id]) {
-          resourceRatings[id] = { total: 0, count: 0 };
+    
+    // Filter by difficulty level (which maps to academic level)
+    if (academicLevel && typeof academicLevel === 'string' && academicLevel.trim()) {
+      query.difficultyLevel = { 
+        $regex: academicLevel.trim(), 
+        $options: 'i' 
+      };
+    }
+    
+    // Filter by creation time if provided
+    if (time && typeof time === 'string' && time.trim()) {
+      try {
+        const timeDate = new Date(time);
+        if (!isNaN(timeDate.getTime())) {
+          query.createdAt = { $gte: timeDate };
         }
-        resourceRatings[id].total += item.rating;
-        resourceRatings[id].count += 1;
+      } catch (error) {
+        console.warn("Invalid time parameter:", time);
       }
     }
 
-    const enriched = resources.map((res) => {
-      const r = resourceRatings[res._id.toString()];
+    // Fetch filtered resources with proper error handling
+    const resources = await Resource.find(query).lean();
+    
+    if (!resources) {
+      return res.status(200).json([]);
+    }
+
+    // Calculate average ratings from the ratings array in each resource
+    const enrichedResources = resources.map((resource) => {
+      let averageRating = 0;
+      let ratingCount = 0;
+
+      if (resource.ratings && Array.isArray(resource.ratings)) {
+        const totalRating = resource.ratings.reduce((sum, rating) => {
+          if (typeof rating.rating === 'number' && !isNaN(rating.rating)) {
+            ratingCount++;
+            return sum + rating.rating;
+          }
+          return sum;
+        }, 0);
+
+        averageRating = ratingCount > 0 ? totalRating / ratingCount : 0;
+      }
+
       return {
-        ...res.toObject(),
-        averageRating: r ? Number((r.total / r.count).toFixed(1)) : null,
+        _id: resource._id.toString(),
+        title: resource.title,
+        contentUrl: resource.contentUrl,
+        type: resource.type,
+        subjectTags: resource.subjectTags || [],
+        difficultyLevel: resource.difficultyLevel,
+        description: resource.description,
+        ratings: resource.ratings || [],
+        averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal place
+        createdAt: resource.createdAt,
+        updatedAt: resource.updatedAt
       };
     });
 
-    // Log for debugging
-    console.log("Query Parameters:", { subject, academicLevel, time });
-    console.log("Resource Ratings:", resourceRatings);
-    console.log("Enriched Resources:", enriched.map(r => ({
-      id: r._id,
-      title: r.title,
-      averageRating: r.averageRating,
-      subject: r.subject, // Include subject for debugging
-    })));
+    // Log for debugging (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Query Parameters:", { subject, academicLevel, time });
+      console.log("Query Object:", query);
+      console.log("Found Resources:", enrichedResources.length);
+      console.log("Sample Resource:", enrichedResources[0]);
+    }
 
-    res.status(200).json(enriched);
+    res.status(200).json(enrichedResources);
   } catch (error) {
-    console.error("Error in API handler:", error);
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error("Error in resources API handler:", error);
+    res.status(500).json({ 
+      error: "Internal Server Error", 
+      message: "Failed to fetch resources",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 }

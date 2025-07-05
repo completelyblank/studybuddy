@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { getSession } from "next-auth/react";
 import axios from "axios";
 import { Types } from "mongoose";
-import Navbar from "@/src/components/Navbar";
+
 import io, { Socket } from "socket.io-client";
 import { DefaultEventsMap } from "@socket.io/component-emitter";
 import { ToastContainer, toast } from "react-toastify";
@@ -233,7 +233,6 @@ export default function CreateGroup() {
   if (isSessionLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
-        <Navbar />
         <p className="text-lg text-center">Loading...</p>
       </div>
     );
@@ -242,7 +241,6 @@ export default function CreateGroup() {
   if (error && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
-        <Navbar />
         <p className="text-red-400 text-lg text-center">{error}</p>
       </div>
     );
@@ -250,7 +248,6 @@ export default function CreateGroup() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
-      <Navbar />
       <div className="max-w-md mx-auto mt-4">
         <h1 className="text-3xl font-bold text-teal-300 drop-shadow-lg mb-6 flex-col justify-center">Create a Study Group</h1>
 

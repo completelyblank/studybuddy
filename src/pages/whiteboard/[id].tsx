@@ -7,7 +7,7 @@ import io, { Socket } from "socket.io-client";
 import { DefaultEventsMap } from "@socket.io/component-emitter";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import Navbar from "@/src/components/Navbar";
+
 
 // Dynamically import react-konva components with SSR disabled
 const Stage = dynamic(() => import("react-konva").then((mod) => mod.Stage), { ssr: false });
@@ -141,10 +141,8 @@ export default function Whiteboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-8 font-sans">
-      <Navbar />
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-4 mb-6">
-          <img src="/logo.png" alt="Logo" className="h-20 w-20 rounded-xl shadow-md" />
           <h1 className="text-3xl font-bold text-teal-300 drop-shadow-lg">
             Whiteboard for Group {id}
           </h1>

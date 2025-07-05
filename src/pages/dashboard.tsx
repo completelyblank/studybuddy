@@ -9,7 +9,7 @@ import { DefaultEventsMap } from "@socket.io/component-emitter";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import GroupAvailability from "../components/GroupAvailability";
-import Navbar from "../components/Navbar";
+import { Section, Card, Button, Badge, Grid, Input, LoadingSpinner, EmptyState } from "../components/ui";
 
 interface Chat {
   _id: string;
@@ -119,11 +119,11 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         const [matchRes, joinedRes, userRes, requestsRes, chatsRes] = await Promise.all([
-          axios.get("/api/resources/matchmaking", { params: { userId }, withCredentials: true }),
-          axios.get("/api/groups/user", { params: { userId }, withCredentials: true }),
-          axios.get("/api/users/me", { params: { userId }, withCredentials: true }),
-          axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
-          axios.get("/api/chats/user", { params: { userId }, withCredentials: true }),
+          axios.get("/api/resources/matchmaking"),
+          axios.get("/api/groups/user"),
+          axios.get("/api/users/me"),
+          axios.get("/api/requests/pending"),
+          axios.get("/api/chats/user"),
         ]);
 
         // Transform preferredStudyTimes to a formatted string
@@ -147,12 +147,14 @@ export default function Dashboard() {
           studyGoals: userRes.data.studyGoals || "",
         });
 
-        matchRes.data.forEach((match: Match) => {
+        // Emit match finding for each match
+        if (matchRes.data && matchRes.data.length > 0) {
           newSocket.emit("findMatch", userId);
-        });
-      } catch (err) {
+        }
+      } catch (err: any) {
         console.error("Dashboard fetch error:", err);
-        toast.error("Failed to load dashboard data", {
+        const errorMessage = err.response?.data?.message || "Failed to load dashboard data";
+        toast.error(errorMessage, {
           position: "top-right",
           autoClose: 5000,
         });
@@ -201,24 +203,16 @@ export default function Dashboard() {
         .filter(Boolean)
         .map((t) => {
           const [day, timeRange] = t.split(":");
-          const [startTime, endTime] = timeRange?.split("-") || [];
-          return {
-            day: day || "",
-            startTime: startTime || "",
-            endTime: endTime || "",
-          };
-        })
-        .filter((obj) => obj.day && obj.startTime && obj.endTime);
+          const [startTime, endTime] = timeRange.split("-");
+          return { day, startTime, endTime };
+        });
 
       await axios.put(
         "/api/users/update",
         {
           userId,
           academicLevel: editProfile.academicLevel,
-          subjects: editProfile.subjects
-            .split(",")
-            .map((s) => s.trim())
-            .filter((s) => s),
+          subjects: editProfile.subjects.split(",").map((s) => s.trim()),
           preferredStudyTimes: preferredStudyTimesArray,
           learningStyle: editProfile.learningStyle,
           studyGoals: editProfile.studyGoals,
@@ -241,14 +235,14 @@ export default function Dashboard() {
 
   async function leaveGroup(groupId: string) {
     try {
-      await axios.post("/api/groups/leave", { groupId, userId }, { withCredentials: true });
+      await axios.post("/api/groups/leave", { userId, groupId }, { withCredentials: true });
       setJoinedGroups((prev) => prev.filter((g) => g._id !== groupId));
       toast.success("Left group successfully", {
         position: "top-right",
         autoClose: 3000,
       });
     } catch (err) {
-      console.error("Error leaving group:", err);
+      console.error("Leave group error:", err);
       toast.error("Failed to leave group", {
         position: "top-right",
         autoClose: 5000,
@@ -263,13 +257,8 @@ export default function Dashboard() {
         position: "top-right",
         autoClose: 3000,
       });
-      const requestsRes = await axios.get("/api/requests/pending", {
-        params: { userId },
-        withCredentials: true,
-      });
-      setPendingRequests(requestsRes.data || []);
     } catch (err) {
-      console.error("Error sending request:", err);
+      console.error("Send request error:", err);
       toast.error("Failed to send request", {
         position: "top-right",
         autoClose: 5000,
@@ -279,27 +268,14 @@ export default function Dashboard() {
 
   async function respondToRequest(requestId: string, status: "approved" | "rejected") {
     try {
-      const res = await axios.post(
-        "/api/requests/respond",
-        { requestId, status, userId },
-        { withCredentials: true }
-      );
-      toast.success(`Request ${status}`, {
+      await axios.post("/api/requests/respond", { requestId, status }, { withCredentials: true });
+      setPendingRequests((prev) => prev.filter((r) => r._id !== requestId));
+      toast.success(`Request ${status} successfully`, {
         position: "top-right",
         autoClose: 3000,
-        onClick: status === "approved" && res.data.chatId ? () => router.push(`/chat/${res.data.chatId}`) : undefined,
       });
-      const [requestsRes, chatsRes] = await Promise.all([
-        axios.get("/api/requests/pending", { params: { userId }, withCredentials: true }),
-        axios.get("/api/chats/user", { params: { userId }, withCredentials: true }),
-      ]);
-      setPendingRequests(requestsRes.data || []);
-      setChats(chatsRes.data || []);
-      if (status === "approved" && res.data.chatId) {
-        router.push(`/chat/${res.data.chatId}`);
-      }
     } catch (err) {
-      console.error("Error responding to request:", err);
+      console.error("Respond to request error:", err);
       toast.error("Failed to respond to request", {
         position: "top-right",
         autoClose: 5000,
@@ -309,17 +285,11 @@ export default function Dashboard() {
 
   async function initiateChat(userId2: string) {
     try {
-      const res = await axios.post("/api/chats/initiate", { userId1: userId, userId2 }, { withCredentials: true });
-      const chatId = res.data.chatId;
-      toast.success("Chat initiated successfully", {
-        position: "top-right",
-        autoClose: 3000,
-        onClick: () => router.push(`/chat/${chatId}`),
-      });
-      router.push(`/chat/${chatId}`);
+      const response = await axios.post("/api/chats/initiate", { userId1: userId, userId2 }, { withCredentials: true });
+      router.push(`/chat/${response.data.chatId}`);
     } catch (err) {
-      console.error("Error initiating chat:", err);
-      toast.error("Failed to initiate chat", {
+      console.error("Initiate chat error:", err);
+      toast.error("Failed to start chat", {
         position: "top-right",
         autoClose: 5000,
       });
@@ -328,210 +298,292 @@ export default function Dashboard() {
 
   if (status === "loading" || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
-        <Navbar />
-        <p>Loading...</p>
+      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] flex items-center justify-center">
+        <LoadingSpinner size="lg" />
       </div>
     );
   }
 
-  if (!session || !userId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6">
-        <Navbar />
-        <p>Please login to view dashboard.</p>
-      </div>
-    );
+  if (!session) {
+    router.push("/auth/signin");
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] text-white p-6 space-y-8">
-      <Navbar />
-      <h1 className="text-3xl font-bold">Welcome, {session.user.name}</h1>
-
-      {/* 👤 Avatar */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold">Profile Avatar</h2>
-        <img
-          src={avatarUrl || "/default.jpeg"}
-          className="w-24 h-24 rounded-full object-cover"
-          alt="avatar"
-        />
-        <input
-          value={avatarUrl}
-          onChange={(e) => setAvatarUrl(e.target.value)}
-          placeholder="Enter Avatar URL"
-          className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
-        />
-        <button
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-          onClick={updateAvatar}
-        >
-          Update Avatar
-        </button>
-      </section>
-
-      {/* ✏️ Profile Preferences */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold">Edit Preferences</h2>
-        {[
-          { label: "Academic Level", name: "academicLevel" },
-          { label: "Subjects (comma separated)", name: "subjects" },
-          { label: "Preferred Study Times (e.g., Monday:10:00-12:00)", name: "preferredStudyTimes" },
-          { label: "Learning Style", name: "learningStyle" },
-          { label: "Study Goals", name: "studyGoals" },
-        ].map(({ label, name }) => (
-          <div key={name}>
-            <label className="block text-sm mb-1">{label}</label>
-            <input
-              className="w-full px-4 py-2 rounded-lg bg-white/5 border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-teal-400 transition"
-              value={editProfile[name as keyof EditProfileState]}
-              onChange={(e) => setEditProfile({ ...editProfile, [name]: e.target.value })}
-            />
-          </div>
-        ))}
-        <button
-          className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
-          onClick={updateProfile}
-        >
-          Save Profile
-        </button>
-      </section>
-
-      {/* 🧠 Joined Study Groups */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold mb-2">Your Study Groups</h2>
-        {joinedGroups.length ? (
-          <ul className="space-y-4">
-            {joinedGroups.map((group) => (
-              <li key={group._id} className="bg-gray-800 p-4 rounded">
-                <p className="font-bold">{group.title}</p>
-                <p className="text-sm">{group.description}</p>
-                <div className="mt-2 space-x-2">
-                  <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-                    onClick={() => router.push(`/chat/group/${group._id}`)}
-                  >
-                    Open Group Chat
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-                    onClick={() => router.push(`/whiteboard/${group._id}`)}
-                  >
-                    Open Whiteboard
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
-                    onClick={() => leaveGroup(group._id)}
-                  >
-                    Leave Group
-                  </button>
+    <div className="min-h-screen bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]">
+      <Section title={`Welcome back, ${session.user.name}!`} subtitle="Your personalized study dashboard">
+        <div className="space-y-8">
+          {/* Profile Section */}
+          <Grid cols={2} gap="lg">
+            {/* Avatar Card */}
+            <Card>
+              <h3 className="text-xl font-semibold text-white mb-4">Profile Avatar</h3>
+              <div className="flex items-center gap-4 mb-4">
+                <img
+                  src={avatarUrl || "/default.jpeg"}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-teal-400"
+                  alt="avatar"
+                />
+                <div className="flex-1">
+                  <Input
+                    value={avatarUrl}
+                    onChange={(e) => setAvatarUrl(e.target.value)}
+                    placeholder="Enter Avatar URL"
+                  />
                 </div>
-                <div className="mt-4">
-                  <GroupAvailability groupId={group._id} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>You haven’t joined any groups yet.</p>
-        )}
-      </section>
+              </div>
+              <Button onClick={updateAvatar} className="w-full">
+                Update Avatar
+              </Button>
+            </Card>
 
-      {/* 📬 Pending Study Partner Requests */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold mb-2">Study Partner Requests</h2>
-        {pendingRequests.length ? (
-          <ul className="space-y-2">
-            {pendingRequests.map((request) => (
-              <li key={request._id} className="bg-gray-800 p-4 rounded">
-                <p className="font-bold">
-                  {request.senderId._id === userId
-                    ? `Sent to ${request.receiverId.name} (${request.status})`
-                    : `Received from ${request.senderId.name} (${request.status})`}
-                </p>
-                {request.status === "pending" && request.receiverId._id === userId && (
-                  <div className="mt-2 space-x-2">
-                    <button
-                      className="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-semibold transition"
-                      onClick={() => respondToRequest(request._id, "approved")}
+            {/* Profile Preferences */}
+            <Card>
+              <h3 className="text-xl font-semibold text-white mb-4">Profile Preferences</h3>
+              <div className="space-y-4">
+                <Input
+                  label="Academic Level"
+                  value={editProfile.academicLevel}
+                  onChange={(e) => setEditProfile({ ...editProfile, academicLevel: e.target.value })}
+                  placeholder="e.g., Undergraduate, Graduate"
+                />
+                <Input
+                  label="Subjects (comma separated)"
+                  value={editProfile.subjects}
+                  onChange={(e) => setEditProfile({ ...editProfile, subjects: e.target.value })}
+                  placeholder="e.g., Math, Physics, Computer Science"
+                />
+                <Input
+                  label="Learning Style"
+                  value={editProfile.learningStyle}
+                  onChange={(e) => setEditProfile({ ...editProfile, learningStyle: e.target.value })}
+                  placeholder="e.g., Visual, Auditory, Kinesthetic"
+                />
+                <Input
+                  label="Study Goals"
+                  value={editProfile.studyGoals}
+                  onChange={(e) => setEditProfile({ ...editProfile, studyGoals: e.target.value })}
+                  placeholder="e.g., Improve problem-solving skills"
+                />
+                <Button onClick={updateProfile} className="w-full">
+                  Save Profile
+                </Button>
+              </div>
+            </Card>
+          </Grid>
+
+          {/* Study Groups */}
+          <Card>
+            <h3 className="text-xl font-semibold text-white mb-6">Your Study Groups</h3>
+            {joinedGroups.length > 0 ? (
+              <Grid cols={2} gap="md">
+                {joinedGroups.map((group) => (
+                  <Card key={group._id} variant="outlined">
+                    <h4 className="text-lg font-semibold text-white mb-2">{group.title}</h4>
+                    <p className="text-gray-300 mb-4">{group.description}</p>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/chat/group/${group._id}`)}
+                      >
+                        💬 Group Chat
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/whiteboard/${group._id}`)}
+                      >
+                        📝 Whiteboard
+                      </Button>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => leaveGroup(group._id)}
+                      >
+                        Leave Group
+                      </Button>
+                    </div>
+                    <GroupAvailability groupId={group._id} />
+                  </Card>
+                ))}
+              </Grid>
+            ) : (
+              <EmptyState
+                title="No study groups yet"
+                description="Join or create a study group to start collaborating"
+                icon={
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                }
+                action={
+                  <Button onClick={() => router.push('/group/create')}>
+                    Create Group
+                  </Button>
+                }
+              />
+            )}
+          </Card>
+
+          {/* Study Partner Requests */}
+          <Card>
+            <h3 className="text-xl font-semibold text-white mb-6">Study Partner Requests</h3>
+            {pendingRequests.length > 0 ? (
+              <Grid cols={2} gap="md">
+                {pendingRequests.map((request) => (
+                  <Card key={request._id} variant="outlined">
+                    <div className="flex items-center gap-3 mb-4">
+                      <img
+                        src={request.senderId.avatar || "/default.jpeg"}
+                        className="w-12 h-12 rounded-full object-cover"
+                        alt="avatar"
+                      />
+                      <div>
+                        <h4 className="font-semibold text-white">
+                          {request.senderId._id === userId
+                            ? `Sent to ${request.receiverId.name}`
+                            : `Received from ${request.senderId.name}`}
+                        </h4>
+                        <Badge variant={request.status === "pending" ? "warning" : "success"}>
+                          {request.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {request.status === "pending" && request.receiverId._id === userId && (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => respondToRequest(request._id, "approved")}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => respondToRequest(request._id, "rejected")}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {request.status === "approved" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => initiateChat(request.senderId._id === userId ? request.receiverId._id : request.senderId._id)}
+                      >
+                        Start Chat
+                      </Button>
+                    )}
+                  </Card>
+                ))}
+              </Grid>
+            ) : (
+              <EmptyState
+                title="No pending requests"
+                description="You have no study partner requests at the moment"
+                icon={
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                }
+              />
+            )}
+          </Card>
+
+          {/* Active Chats */}
+          <Card>
+            <h3 className="text-xl font-semibold text-white mb-6">Your Private Chats</h3>
+            {chats.length > 0 ? (
+              <Grid cols={2} gap="md">
+                {chats.map((chat) => {
+                  const otherParticipant = chat.participants.find((p) => p._id !== userId);
+                  return (
+                    <Card key={chat._id} variant="outlined">
+                      <div className="flex items-center gap-3 mb-4">
+                        <img
+                          src={otherParticipant?.avatar || "/default.jpeg"}
+                          className="w-12 h-12 rounded-full object-cover"
+                          alt="avatar"
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-white">
+                            Chat with {otherParticipant?.name || "Unknown"}
+                          </h4>
+                          <p className="text-sm text-gray-300">
+                            {chat.messages.length > 0 
+                              ? chat.messages[chat.messages.length - 1].content 
+                              : "No messages yet"}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/chat/${chat._id}`)}
+                        className="w-full"
+                      >
+                        Open Chat
+                      </Button>
+                    </Card>
+                  );
+                })}
+              </Grid>
+            ) : (
+              <EmptyState
+                title="No active chats"
+                description="Start a conversation with your study partners"
+                icon={
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                }
+              />
+            )}
+          </Card>
+
+          {/* Suggested Study Partners */}
+          <Card>
+            <h3 className="text-xl font-semibold text-white mb-6">Suggested Study Partners</h3>
+            {matches.length > 0 ? (
+              <Grid cols={2} gap="md">
+                {matches.map((match) => (
+                  <Card key={match.userId} variant="outlined">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-lg font-semibold text-white">{match.name}</h4>
+                      <Badge variant="success">
+                        {(match.score * 100).toFixed(0)}% Match
+                      </Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => sendStudyPartnerRequest(match.userId)}
+                      className="w-full"
                     >
-                      Approve
-                    </button>
-                    <button
-                      className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg font-semibold transition"
-                      onClick={() => respondToRequest(request._id, "rejected")}
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-                {request.status === "approved" && (
-                  <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-                    onClick={() => initiateChat(request.senderId._id === userId ? request.receiverId._id : request.senderId._id)}
-                  >
-                    Start Chat
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No study partner requests.</p>
-        )}
-      </section>
-
-      {/* 💬 Active Chats */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold mb-2">Your Private Chats</h2>
-        {chats.length ? (
-          <ul className="space-y-2">
-            {chats.map((chat) => {
-              const otherParticipant = chat.participants.find((p) => p._id !== userId);
-              return (
-                <li key={chat._id} className="bg-gray-800 p-4 rounded">
-                  <p className="font-bold">Chat with {otherParticipant?.name || "Unknown"}</p>
-                  <p className="text-sm">
-                    Last message: {chat.messages.length > 0 ? chat.messages[chat.messages.length - 1].content : "No messages yet"}
-                  </p>
-                  <button
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-                    onClick={() => router.push(`/chat/${chat._id}`)}
-                  >
-                    Open Chat
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p>You have no active private chats.</p>
-        )}
-      </section>
-
-      {/* 🤝 Suggested Study Partners */}
-      <section className="bg-white/10 border border-teal-400/40 backdrop-blur-md p-6 rounded-xl shadow-lg space-y-3">
-        <h2 className="text-xl font-semibold mb-2">Suggested Study Partners</h2>
-        {matches.length ? (
-          <ul className="space-y-2">
-            {matches.map((match) => (
-              <li key={match.userId} className="bg-gray-800 p-4 rounded">
-                <p className="font-bold">{match.name}</p>
-                <p className="text-sm">Match score: {(match.score * 100).toFixed(0)}%</p>
-                <button
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition"
-                  onClick={() => sendStudyPartnerRequest(match.userId)}
-                >
-                  Request Study Partner
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>No compatible matches yet.</p>
-        )}
-      </section>
+                      Request Study Partner
+                    </Button>
+                  </Card>
+                ))}
+              </Grid>
+            ) : (
+              <EmptyState
+                title="No matches yet"
+                description="Complete your profile to find compatible study partners"
+                icon={
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                }
+              />
+            )}
+          </Card>
+        </div>
+      </Section>
 
       <ToastContainer
         position="top-right"

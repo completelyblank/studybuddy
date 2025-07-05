@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import { io, Socket } from "socket.io-client";
 import { getSession } from "next-auth/react";
 import axios from "axios";
-import Navbar from "@/src/components/Navbar";
+
 
 type ChatMessage = {
   message: string;
@@ -86,7 +86,6 @@ export default function GroupChat() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800 text-white p-4">
-      <Navbar />
       <h1 className="text-2xl font-bold mb-6 text-teal-400">
         Group Chat: <span className="text-white">{id}</span>
       </h1>
