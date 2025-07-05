@@ -83,12 +83,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     res.status(200).json(transformedGroups);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Failed to fetch user's groups:", error);
     res.status(500).json({ 
       error: "Internal Server Error",
       message: "Failed to fetch user groups",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }

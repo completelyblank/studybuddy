@@ -61,8 +61,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Calculate ratings from user interaction history
     for (const user of users) {
-      for (const entry of user.groupInteractionHistory || []) {
-        const groupId = entry.group.toString();
+      for (const entry of (user as any).groupInteractionHistory || []) {
+        const groupId = (entry.group as any)?.toString();
 
         if (!groupFeedbackMap.has(groupId)) {
           groupFeedbackMap.set(groupId, {
@@ -80,7 +80,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         if (entry.comments) {
           data.comments.push({
-            user: user._id.toString(),
+            user: (user as any)._id?.toString() || '',
             rating: entry.rating,
             comments: entry.comments,
             ratedAt: entry.ratedAt || new Date(),
@@ -91,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Enrich groups with rating data
     const enrichedGroups = groups.map((group) => {
-      const groupId = group._id.toString();
+      const groupId = (group as any)._id?.toString() || '';
       const feedback = groupFeedbackMap.get(groupId);
       
       const averageRating = feedback && feedback.count > 0 
@@ -130,7 +130,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ 
       error: "Internal Server Error", 
       message: "Failed to fetch groups",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }

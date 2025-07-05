@@ -28,15 +28,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .lean();
 
     const transformedRequests = requests.map((request) => ({
-      _id: request._id.toString(),
+      _id: (request as any)._id?.toString() || '',
       senderId: {
-        _id: request.senderId._id.toString(),
+        _id: (request as any).senderId?._id?.toString() || '',
         name: request.senderId.name,
         email: request.senderId.email,
         avatar: request.senderId.avatar || null,
       },
       receiverId: {
-        _id: request.receiverId._id.toString(),
+        _id: (request as any).receiverId?._id?.toString() || '',
         name: request.receiverId.name,
         email: request.receiverId.email,
         avatar: request.receiverId.avatar || null,
@@ -47,12 +47,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     res.status(200).json(transformedRequests);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error fetching requests:", error);
     res.status(500).json({ 
       error: "Internal Server Error",
       message: "Failed to fetch pending requests",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }

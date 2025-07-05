@@ -21,12 +21,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     await connectToDatabase();
 
-    const currentUser = await User.findById(userId).lean();
+    const currentUser = (await User.findById(userId).lean()) as any as import("../../../models/User").IUser;
     if (!currentUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    const users = await User.find({ _id: { $ne: userId } }).lean();
+    const users = (await User.find({ _id: { $ne: userId } }).lean()) as any as import("../../../models/User").IUser[];
 
     if (!users || users.length === 0) {
       return res.status(200).json([]);

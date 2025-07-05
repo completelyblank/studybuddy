@@ -53,12 +53,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Calculate average ratings from the ratings array in each resource
-    const enrichedResources = resources.map((resource) => {
+    const enrichedResources = resources.map((resource: any) => {
       let averageRating = 0;
       let ratingCount = 0;
 
       if (resource.ratings && Array.isArray(resource.ratings)) {
-        const totalRating = resource.ratings.reduce((sum, rating) => {
+        const totalRating = resource.ratings.reduce((sum: number, rating: any) => {
           if (typeof rating.rating === 'number' && !isNaN(rating.rating)) {
             ratingCount++;
             return sum + rating.rating;
@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       return {
-        _id: resource._id.toString(),
+        _id: resource._id?.toString() || '',
         title: resource.title,
         contentUrl: resource.contentUrl,
         type: resource.type,
@@ -98,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(500).json({ 
       error: "Internal Server Error", 
       message: "Failed to fetch resources",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }

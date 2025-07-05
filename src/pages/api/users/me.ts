@@ -48,12 +48,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }),
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in /api/users/me:", error);
     return res.status(500).json({ 
       error: "Internal Server Error",
       message: "Failed to fetch user data",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
     });
   }
 }
